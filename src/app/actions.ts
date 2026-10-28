@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { nairaToKobo } from "@/lib/money";
+import { isMarketplaceImagePathForBusiness } from "@/lib/image-path";
 
 function value(formData: FormData, name: string) {
   const raw = formData.get(name);
@@ -293,6 +294,7 @@ export async function createSupplierProductAction(formData: FormData) {
     quantity: z.coerce.number().int().min(0).max(1000000),
     price: z.string().trim(),
     visibility: z.enum(["public", "private"]),
+    imagePath: z.string().trim().max(200).optional(),
   }).safeParse({
     businessId: value(formData, "business_id"),
     categoryId: value(formData, "category_id"),
@@ -303,11 +305,15 @@ export async function createSupplierProductAction(formData: FormData) {
     quantity: value(formData, "quantity"),
     price: value(formData, "price") || "0",
     visibility: value(formData, "visibility"),
+    imagePath: value(formData, "image_path"),
   });
   const unitPriceKobo = parsed.success ? nairaToKobo(parsed.data.price, true) : null;
-  if (!parsed.success || unitPriceKobo === null) redirect("/supplier?error=product");
+  if (!parsed.success || unitPriceKobo === null
+    || (parsed.data.imagePath && !isMarketplaceImagePathForBusiness(parsed.data.imagePath, parsed.data.businessId))) {
+    redirect("/supplier?error=product");
+  }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase!.rpc("create_supplier_product", {
+  const { data: productId, error } = await supabase!.rpc("create_supplier_product", {
     p_business_id: parsed.data.businessId,
     p_category_id: parsed.data.categoryId,
     p_name: parsed.data.name,
@@ -318,7 +324,12 @@ export async function createSupplierProductAction(formData: FormData) {
     p_unit_price_kobo: unitPriceKobo,
     p_visibility: parsed.data.visibility,
   });
-  if (error) redirect("/supplier?error=product");
+  if (error || !productId) redirect("/supplier?error=product");
+  if (parsed.data.imagePath) {
+    const { error: imageError } = await supabase!.from("products")
+      .update({ image_path: parsed.data.imagePath }).eq("id", productId).eq("business_id", parsed.data.businessId);
+    if (imageError) redirect("/supplier?product=created&image=error");
+  }
   revalidatePath("/supplier");
   redirect("/supplier?product=created");
 }
@@ -335,6 +346,7 @@ export async function updateSupplierProductAction(formData: FormData) {
     price: z.string().trim(),
     visibility: z.enum(["public", "private"]),
     isActive: z.enum(["yes", "no"]),
+    imagePath: z.string().trim().max(200).optional(),
   }).safeParse({
     productId: value(formData, "product_id"),
     name: value(formData, "name"),
@@ -345,10 +357,17 @@ export async function updateSupplierProductAction(formData: FormData) {
     price: value(formData, "price"),
     visibility: value(formData, "visibility"),
     isActive: value(formData, "is_active"),
+    imagePath: value(formData, "image_path"),
   });
   const priceKobo = parsed.success ? nairaToKobo(parsed.data.price, true) : null;
   if (!parsed.success || priceKobo === null) redirect("/supplier?error=product");
   const supabase = await createSupabaseServerClient();
+  const { data: currentProduct } = await supabase!.from("products")
+    .select("business_id,image_path").eq("id", parsed.data.productId).maybeSingle();
+  if (!currentProduct || (parsed.data.imagePath
+    && !isMarketplaceImagePathForBusiness(parsed.data.imagePath, currentProduct.business_id))) {
+    redirect("/supplier?error=product");
+  }
   const { error } = await supabase!.rpc("update_supplier_product", {
     p_product_id: parsed.data.productId,
     p_name: parsed.data.name,
@@ -361,9 +380,62 @@ export async function updateSupplierProductAction(formData: FormData) {
     p_is_active: parsed.data.isActive === "yes",
   });
   if (error) redirect("/supplier?error=product");
+  const nextImagePath = parsed.data.imagePath || null;
+  const { error: imageError } = await supabase!.from("products")
+    .update({ image_path: nextImagePath }).eq("id", parsed.data.productId).eq("business_id", currentProduct.business_id);
+  if (imageError) redirect("/supplier?product=updated&image=error");
+  if (currentProduct.image_path && currentProduct.image_path !== nextImagePath) {
+    await supabase!.storage.from("marketplace-images").remove([currentProduct.image_path]);
+  }
   revalidatePath("/supplier");
   revalidatePath("/find-stock");
+  revalidatePath("/business/[slug]", "page");
   redirect("/supplier?product=updated");
+}
+
+export async function deleteSupplierProductAction(formData: FormData) {
+  const user = await requireUser();
+  const productId = value(formData, "product_id");
+  if (!z.uuid().safeParse(productId).success) redirect("/supplier?error=product");
+  const supabase = await createSupabaseServerClient();
+  const { data: product } = await supabase!.from("products")
+    .select("business_id,image_path").eq("id", productId).maybeSingle();
+  if (!product) redirect("/supplier?error=product");
+  const { data: membership } = await supabase!.from("business_memberships")
+    .select("role").eq("business_id", product.business_id).eq("user_id", user.id).maybeSingle();
+  if (!membership || !["owner", "admin"].includes(membership.role)) redirect("/supplier?error=delete");
+
+  const references = await Promise.all([
+    supabase!.from("order_items").select("id", { count: "exact", head: true }).eq("product_id", productId),
+    supabase!.from("quotations").select("id", { count: "exact", head: true }).eq("product_id", productId),
+    supabase!.from("stock_reservations").select("id", { count: "exact", head: true }).eq("product_id", productId),
+  ]);
+  const hasHistory = references.some((reference) => reference.error || (reference.count ?? 0) > 0);
+  if (hasHistory) {
+    const { error } = await supabase!.from("products").update({ is_active: false, visibility: "private" }).eq("id", productId);
+    if (error) redirect("/supplier?error=delete");
+    revalidatePath("/supplier");
+    revalidatePath("/find-stock");
+    revalidatePath("/suppliers");
+    redirect("/supplier?product=archived");
+  }
+
+  const { error } = await supabase!.from("products").delete().eq("id", productId);
+  if (error) {
+    const { error: archiveError } = await supabase!.from("products")
+      .update({ is_active: false, visibility: "private" }).eq("id", productId);
+    if (archiveError) redirect("/supplier?error=delete");
+    revalidatePath("/supplier");
+    revalidatePath("/find-stock");
+    revalidatePath("/suppliers");
+    redirect("/supplier?product=archived");
+  }
+  if (product.image_path) await supabase!.storage.from("marketplace-images").remove([product.image_path]);
+  revalidatePath("/supplier");
+  revalidatePath("/find-stock");
+  revalidatePath("/suppliers");
+  revalidatePath("/business/[slug]", "page");
+  redirect("/supplier?product=deleted");
 }
 
 export async function adminReviewBusinessAction(formData: FormData) {
@@ -610,10 +682,13 @@ export async function updateSupportCaseStatusAction(formData: FormData) {
 export async function markNotificationReadAction(formData: FormData) {
   await requireUser();
   const id = value(formData, "notification_id");
-  if (!z.uuid().safeParse(id).success) redirect("/dashboard?error=invalid");
+  const returnTo = value(formData, "return_to");
+  const destination = returnTo === "/supplier" ? "/supplier" : "/dashboard";
+  if (!z.uuid().safeParse(id).success) redirect(destination + "?error=invalid");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
-  if (error) redirect("/dashboard?error=notification");
+  if (error) redirect(destination + "?error=notification");
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  revalidatePath("/supplier");
+  redirect(destination);
 }

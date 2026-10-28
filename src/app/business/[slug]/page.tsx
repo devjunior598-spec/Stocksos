@@ -1,9 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowRight, BadgeCheck, Building2, Boxes, MapPin, PackageSearch, Share2 } from "lucide-react";
 import { createBusinessEnquiryAction, saveSupplierAction, updateBusinessEnquiryStatusAction } from "@/app/actions";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { formatNaira } from "@/lib/data";
+import { formatNaira, getMarketplaceImageUrl } from "@/lib/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 
@@ -21,7 +22,7 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
 
   const [{ data: products }, membershipResult, savedResult] = await Promise.all([
     supabase.from("products")
-      .select("id,name,brand,condition,specifications,category_id,inventory!inner(quantity_available,unit_price_kobo,currency)")
+      .select("id,name,brand,condition,specifications,image_path,category_id,inventory!inner(quantity_available,unit_price_kobo,currency)")
       .eq("business_id", business.id).eq("is_active", true).eq("visibility", "public")
       .gt("inventory.quantity_available", 0).order("created_at", { ascending: false }).limit(30),
     user ? supabase.from("business_memberships").select("role").eq("business_id", business.id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
@@ -52,7 +53,8 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
           <div className="dashboard-section-head"><h2>Available stock</h2><span className="muted small">Live listings with available inventory</span></div>
           {products?.length ? <div className="catalog-grid">{products.map((product) => {
             const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
-            return <article className="product-card" key={product.id}><div className="product-placeholder"><PackageSearch size={25} /></div><div className="product-detail"><span className="pill">{product.condition}</span><h3>{product.name}</h3><p>{[product.brand, `${stock?.quantity_available ?? 0} available`].filter(Boolean).join(" · ")}</p>{product.specifications ? <p className="product-specs">{product.specifications}</p> : null}<div className="product-price">{formatNaira(stock?.unit_price_kobo)}</div></div></article>;
+            const imageUrl = getMarketplaceImageUrl(product.image_path);
+            return <article className="product-card" key={product.id}><div className="product-placeholder">{imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 33vw" className="product-image" /> : <PackageSearch size={25} />}</div><div className="product-detail"><span className="pill">{product.condition}</span><h3>{product.name}</h3><p>{[product.brand, `${stock?.quantity_available ?? 0} available`].filter(Boolean).join(" · ")}</p>{product.specifications ? <p className="product-specs">{product.specifications}</p> : null}<div className="product-price">{formatNaira(stock?.unit_price_kobo)}</div></div></article>;
           })}</div> : <div className="empty-state"><div className="empty-state-icon"><Boxes size={21} /></div><h3>No public stock listed yet</h3><p>This approved business has not published available inventory. You can still send a product enquiry below.</p></div>}
         </div>
         <aside>

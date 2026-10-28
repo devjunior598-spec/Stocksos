@@ -232,7 +232,8 @@ h3 { font-size: 18px; line-height: 1.3; margin-bottom: 9px; font-weight: 720; }
 .filter-row .form-field { min-width: 200px; margin: 0; }
 .catalog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .product-card { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
-.product-placeholder { height: 146px; display: grid; place-items: center; color: #a0b2d0; background: #f2f5fb; }
+.product-placeholder { position: relative; height: 146px; display: grid; place-items: center; color: #a0b2d0; background: #f2f5fb; }
+.product-image { object-fit: cover; }
 .product-detail { padding: 16px; }
 .product-detail h3 { font-size: 14px; margin: 10px 0 4px; }
 .product-detail p { margin: 0; color: var(--muted); font-size: 11px; }
@@ -350,6 +351,18 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 .inventory-mini-row strong { color: var(--navy); font-size: 12px; }
 .inventory-mini-row small { color: var(--muted); font-size: 10px; }
 .inventory-mini-row b { color: var(--navy); font-size: 12px; white-space: nowrap; }
+.inventory-mini-row { align-items: center; list-style: none; cursor: pointer; }
+.inventory-mini-row::-webkit-details-marker { display: none; }
+.inventory-summary-copy { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.inventory-thumb { position: relative; width: 42px; height: 42px; flex: 0 0 auto; overflow: hidden; display: grid; place-items: center; color: #9aaaca; background: #f2f5fb; border-radius: 9px; }
+.inventory-thumb-image { object-fit: cover; }
+.inventory-edit-form { padding: 12px 0 16px; }
+.inventory-image-preview { position: relative; width: 160px; height: 110px; overflow: hidden; border: 1px solid #e7ebf2; border-radius: 10px; background: #f2f5fb; }
+.inventory-image-preview img { object-fit: cover; }
+.inventory-image-preview .text-link { position: absolute; right: 5px; bottom: 5px; z-index: 1; padding: 5px 7px; border: 1px solid #e7ebf2; border-radius: 7px; background: #fff; }
+.upload-error { color: #b42318; }
+.inventory-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; }
+.danger-link { color: #b42318; }
 .form-hint { display: block; margin: 8px 0 0; }
 .order-detail-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr); gap: 18px; align-items: start; }
 .order-heading { align-items: center; }

@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Boxes, Building2, PackageCheck, PackagePlus, PackageSearch, ShieldCheck, Truck } from "lucide-react";
-import { createSupplierProductAction, submitQuotationAction, updateSupplierOrderStatusAction, updateSupplierProductAction } from "@/app/actions";
+import Image from "next/image";
+import { ArrowRight, BadgeCheck, Bell, Boxes, Building2, PackageCheck, PackagePlus, PackageSearch, ShieldCheck, Truck } from "lucide-react";
+import { createSupplierProductAction, deleteSupplierProductAction, markNotificationReadAction, submitQuotationAction, updateSupplierOrderStatusAction, updateSupplierProductAction } from "@/app/actions";
 import { requireUser } from "@/lib/auth";
-import { getCategories, formatNaira } from "@/lib/data";
+import { getCategories, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
+import { InventoryImageField } from "@/components/inventory-image-field";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +18,7 @@ function statusClass(status: string) {
   return "pill";
 }
 
-export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; error?: string; product?: string; quote?: string; order?: string }> }) {
+export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; error?: string; product?: string; quote?: string; order?: string; image?: string }> }) {
   const user = await requireUser();
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
@@ -27,16 +30,22 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
   const businesses = memberships.map((membership) => Array.isArray(membership.businesses) ? membership.businesses[0] : membership.businesses).filter((business): business is NonNullable<typeof business> => Boolean(business));
   const approvedIds = businesses.filter((business) => business.verification_status === "approved").map((business) => business.id);
   const [productsResult, matchResult, orderResult] = approvedIds.length ? await Promise.all([
-    supabase!.from("products").select("id,name,brand,specifications,category_id,condition,is_active,visibility,business_id,inventory(quantity_available,unit_price_kobo)").in("business_id", approvedIds).order("created_at", { ascending: false }).limit(30),
+    supabase!.from("products").select("id,name,brand,specifications,image_path,category_id,condition,is_active,visibility,business_id,inventory(quantity_available,unit_price_kobo)").in("business_id", approvedIds).order("created_at", { ascending: false }).limit(30),
     supabase!.from("supplier_matches").select("id,request_id,business_id,sos_requests!inner(id,category_id,product_name,quantity,city,area,urgency,delivery_method,specifications,expires_at,status,created_at)").in("business_id", approvedIds).eq("status", "matched").limit(30),
     supabase!.from("orders").select("id,status,total_kobo,created_at,business_id,request_id,quotations(delivery_available)").in("business_id", approvedIds).order("created_at", { ascending: false }).limit(20),
   ]) : [{ data: [] }, { data: [] }, { data: [] }];
-  const products = (productsResult.data ?? []) as unknown as { id: string; name: string; brand: string | null; specifications: string | null; category_id: string; condition: string; is_active: boolean; visibility: string; business_id: string; inventory: { quantity_available: number; unit_price_kobo: number } | { quantity_available: number; unit_price_kobo: number }[] | null }[];
+  const products = (productsResult.data ?? []) as unknown as { id: string; name: string; brand: string | null; specifications: string | null; image_path: string | null; category_id: string; condition: string; is_active: boolean; visibility: string; business_id: string; inventory: { quantity_available: number; unit_price_kobo: number } | { quantity_available: number; unit_price_kobo: number }[] | null }[];
   const matches = (matchResult.data ?? []) as unknown as { id: string; request_id: string; business_id: string; sos_requests: { id: string; category_id: string; product_name: string; quantity: number; city: string; area: string | null; urgency: string; delivery_method: string; specifications: string | null; expires_at: string; status: string; created_at: string } | { id: string; category_id: string; product_name: string; quantity: number; city: string; area: string | null; urgency: string; delivery_method: string; specifications: string | null; expires_at: string; status: string; created_at: string }[] | null }[];
   const orders = (orderResult.data ?? []) as unknown as { id: string; status: string; total_kobo: number; created_at: string; business_id: string; request_id: string; quotations: { delivery_available: boolean } | { delivery_available: boolean }[] | null }[];
   const activeProductCount = products.filter((product) => product.is_active).length;
   const pendingOrderCount = orders.filter((order) => ["paid", "preparing", "ready_for_pickup", "dispatched", "delivered"].includes(order.status)).length;
   const completeCount = orders.filter((order) => order.status === "completed").length;
+  const notificationResult = await supabase!.from("notifications")
+    .select("id,title,body,read_at,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(6);
+  const notifications = notificationResult.data ?? [];
+  const manageableBusinessIds = memberships
+    .filter((membership) => ["owner", "admin", "inventory"].includes(membership.role))
+    .map((membership) => membership.business_id);
 
   return (
     <section className="dashboard-shell">
@@ -48,6 +57,8 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
         <SupabaseSetupNotice />
         {params.applied ? <div className="notice success-notice"><div><strong>Application submitted.</strong><p>Marketplace access unlocks after verification review.</p></div></div> : null}
         {params.error ? <div className="notice error-notice"><div><strong>We couldn’t complete that action.</strong><p>Refresh your workspace and try again. If it continues, contact support.</p></div></div> : null}
+        {params.product ? <div className="notice success-notice"><div><strong>{params.product === "created" ? "Product added." : params.product === "updated" ? "Inventory updated." : params.product === "deleted" ? "Listing deleted." : params.product === "archived" ? "Listing archived." : "Product action completed."}</strong><p>{params.product === "archived" ? "This listing has order or quotation history, so it was hidden and preserved." : "Your supplier inventory is up to date."}</p></div></div> : null}
+        {params.image === "error" ? <div className="notice error-notice"><div><strong>Product photo needs attention.</strong><p>The inventory was saved, but its photo could not be linked. Edit the listing to try again.</p></div></div> : null}
         {!businesses.length ? <div className="empty-state"><div className="empty-state-icon"><Building2 size={22} /></div><h3>Apply to join as a supplier</h3><p>Your business needs approval before you can publish public stock or quote on SOS requests.</p><Link className="button button-primary" href="/become-supplier">Start supplier application <ArrowRight size={15} /></Link></div> : (
           <>
             <div className="business-switcher">{businesses.map((business) => <span className={statusClass(business.verification_status)} key={business.id}><Building2 size={12} />{business.name} · {business.verification_status}</span>)}</div>
@@ -97,23 +108,33 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
                 </div>
                 <aside>
                   <section className="panel dashboard-section">
+                    <div className="dashboard-section-head"><h2>Notifications</h2><Bell size={17} color="#246bfe" /></div>
+                    {notifications.length ? <div className="notification-list">{notifications.map((notification) => <article className={notification.read_at ? "notification-row" : "notification-row notification-unread"} key={notification.id}><div className="notification-copy"><strong>{notification.title}</strong><p>{notification.body}</p><small>{new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" }).format(new Date(notification.created_at))}</small></div>{!notification.read_at ? <form action={markNotificationReadAction}><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/supplier" /><button className="text-link small" type="submit">Mark read</button></form> : null}</article>)}</div> : <div className="empty-notice"><Bell size={17} /><span>No new activity yet.</span></div>}
+                  </section>
+                  <section className="panel dashboard-section">
                     <div className="dashboard-section-head"><h2>Add inventory</h2><PackagePlus size={17} color="#246bfe" /></div>
                     {products.length ? <div className="inventory-mini-list">{products.slice(0, 8).map((product) => {
                       const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
-                      return <details className="inventory-edit" key={product.id}><summary className="inventory-mini-row"><span><strong>{product.name}</strong><small>{product.is_active ? product.visibility : "inactive"} · {stock?.quantity_available ?? 0} available</small></span><b>{stock ? formatNaira(stock.unit_price_kobo) : "—"}</b></summary><form action={updateSupplierProductAction} className="inventory-edit-form">
+                      const imageUrl = getMarketplaceImageUrl(product.image_path);
+                      const canEdit = manageableBusinessIds.includes(product.business_id);
+                      const canDelete = memberships.some((membership) => membership.business_id === product.business_id && ["owner", "admin"].includes(membership.role));
+                      return <details className="inventory-edit" key={product.id}><summary className="inventory-mini-row"><span className="inventory-summary-copy"><span className="inventory-thumb">{imageUrl ? <Image src={imageUrl} alt="" fill unoptimized sizes="42px" className="inventory-thumb-image" /> : <PackageSearch size={17} />}</span><span><strong>{product.name}</strong><small>{product.is_active ? product.visibility : "inactive"} · {stock?.quantity_available ?? 0} available</small></span></span><b>{stock ? formatNaira(stock.unit_price_kobo) : "—"}</b></summary>{canEdit ? <form action={updateSupplierProductAction} className="inventory-edit-form">
                         <input type="hidden" name="product_id" value={product.id} />
+                        <input type="hidden" name="business_id" value={product.business_id} />
+                        <InventoryImageField id={`edit-photo-${product.id}`} currentPath={product.image_path ?? ""} />
                         <div className="form-field"><label htmlFor={"edit-name-" + product.id}>Product name</label><input id={"edit-name-" + product.id} name="name" defaultValue={product.name} required maxLength={180} /></div>
                         <div className="form-field"><label htmlFor={"edit-brand-" + product.id}>Brand</label><input id={"edit-brand-" + product.id} name="brand" defaultValue={product.brand ?? ""} maxLength={120} /></div>
                         <div className="form-grid"><div className="form-field"><label htmlFor={"edit-quantity-" + product.id}>Available quantity</label><input id={"edit-quantity-" + product.id} name="quantity" type="number" min="0" max="1000000" defaultValue={stock?.quantity_available ?? 0} required /></div><div className="form-field"><label htmlFor={"edit-price-" + product.id}>Unit price (₦)</label><input id={"edit-price-" + product.id} name="price" type="number" min="0" step="0.01" defaultValue={Number(stock?.unit_price_kobo ?? 0) / 100} required /></div></div>
                         <div className="form-grid"><div className="form-field"><label htmlFor={"edit-condition-" + product.id}>Condition</label><select id={"edit-condition-" + product.id} name="condition" defaultValue={product.condition}><option value="new">New</option><option value="used">Used</option><option value="refurbished">Refurbished</option></select></div><div className="form-field"><label htmlFor={"edit-visibility-" + product.id}>Visibility</label><select id={"edit-visibility-" + product.id} name="visibility" defaultValue={product.visibility}><option value="public">Public</option><option value="private">Private</option></select></div></div>
                         <div className="form-field"><label htmlFor={"edit-specs-" + product.id}>Specifications</label><textarea id={"edit-specs-" + product.id} name="specifications" defaultValue={product.specifications ?? ""} maxLength={1000} /></div>
                         <div className="form-field"><label htmlFor={"edit-active-" + product.id}>Listing</label><select id={"edit-active-" + product.id} name="is_active" defaultValue={product.is_active ? "yes" : "no"}><option value="yes">Active</option><option value="no">Hidden</option></select></div>
-                        <button className="button button-secondary button-small" type="submit">Save inventory</button>
-                      </form></details>;
+                        <div className="inventory-actions"><button className="button button-secondary button-small" type="submit">Save inventory</button></div>
+                      </form> : <p className="muted small">You have read access to this listing. Ask a business owner, admin or inventory manager to edit it.</p>}{canDelete ? <form action={deleteSupplierProductAction} className="inventory-delete-form"><input type="hidden" name="product_id" value={product.id} /><ConfirmDeleteButton message="Delete this listing? Listings with order history will be archived instead.">Delete listing</ConfirmDeleteButton></form> : null}</details>;
                     })}</div> : <p className="muted small">No inventory listings yet.</p>}
                     <hr className="form-divider" />
-                    <form action={createSupplierProductAction}>
-                      <div className="form-field"><label htmlFor="business_id">Business</label><select id="business_id" name="business_id" required>{approvedIds.map((id) => <option value={id} key={id}>{businesses.find((business) => business.id === id)?.name}</option>)}</select></div>
+                    {manageableBusinessIds.some((id) => approvedIds.includes(id)) ? <form action={createSupplierProductAction}>
+                      <div className="form-field"><label htmlFor="business_id">Business</label><select id="business_id" name="business_id" required>{manageableBusinessIds.filter((id) => approvedIds.includes(id)).map((id) => <option value={id} key={id}>{businesses.find((business) => business.id === id)?.name}</option>)}</select></div>
+                      <InventoryImageField id="new-product-photo" />
                       <div className="form-field"><label htmlFor="category_id">Category</label><select id="category_id" name="category_id" required defaultValue=""><option value="" disabled>Select a category</option>{categoryList.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></div>
                       <div className="form-field"><label htmlFor="name">Product name</label><input id="name" name="name" required minLength={2} maxLength={180} /></div>
                       <div className="form-grid"><div className="form-field"><label htmlFor="quantity">Available quantity</label><input id="quantity" name="quantity" type="number" min="0" max="1000000" defaultValue="0" required /></div><div className="form-field"><label htmlFor="price">Unit price (₦)</label><input id="price" name="price" type="number" min="0" step="0.01" defaultValue="0" required /></div></div>
@@ -121,7 +142,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
                       <div className="form-field"><label htmlFor="brand">Brand <span className="muted">(optional)</span></label><input id="brand" name="brand" maxLength={120} /></div>
                       <div className="form-field"><label htmlFor="specifications">Specifications <span className="muted">(optional)</span></label><textarea id="specifications" name="specifications" maxLength={1000} /></div>
                       <button className="button button-primary form-submit" type="submit"><PackagePlus size={15} /> Add product</button>
-                    </form>
+                    </form> : <p className="muted small">You need an owner, admin or inventory manager role to add or change listings.</p>}
                   </section>
                   <section className="panel quick-links"><h2>Supplier tools</h2>{businesses.find((business) => business.visibility === "public") ? <Link href={"/business/" + businesses.find((business) => business.visibility === "public")?.slug}><Boxes size={16} /> Public business profile <ArrowRight size={14} /></Link> : null}<Link href="/pricing"><BadgeCheck size={16} /> Plans and pricing <ArrowRight size={14} /></Link><Link href="/contact"><Truck size={16} /> Supplier support <ArrowRight size={14} /></Link></section>
                 </aside>

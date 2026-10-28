@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isMarketplaceImagePath } from "@/lib/image-path";
 
 export type Category = { id: string; name: string; slug: string };
 export type PublicProduct = {
@@ -7,6 +8,7 @@ export type PublicProduct = {
   brand: string | null;
   condition: string;
   specifications: string | null;
+  image_path: string | null;
   business_id: string;
   category_id: string;
   inventory: { quantity_available: number; unit_price_kobo: number; currency: string } | null;
@@ -27,7 +29,7 @@ export async function getProducts(
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   let query = supabase.from("products")
-    .select("id,name,brand,condition,specifications,business_id,category_id,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,slug)")
+    .select("id,name,brand,condition,specifications,image_path,business_id,category_id,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,slug)")
     .eq("is_active", true)
     .eq("visibility", "public")
     .gt("inventory.quantity_available", 0)
@@ -43,6 +45,13 @@ export async function getProducts(
   if (typeof filters?.maxPriceKobo === "number") query = query.lte("inventory.unit_price_kobo", filters.maxPriceKobo);
   const { data } = await query;
   return (data ?? []) as unknown as PublicProduct[];
+}
+
+export function getMarketplaceImageUrl(path: string | null | undefined) {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base || !path || !isMarketplaceImagePath(path)) return null;
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  return `${base.replace(/\/$/, "")}/storage/v1/object/public/marketplace-images/${encodedPath}`;
 }
 
 export async function getPublicBusinesses() {

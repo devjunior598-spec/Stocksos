@@ -1,6 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, PackageSearch } from "lucide-react";
-import { getCategories, getProducts, formatNaira } from "@/lib/data";
+import { getCategories, getProducts, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { z } from "zod";
 
@@ -40,8 +41,9 @@ export default async function FindStockPage({ searchParams }: Props) {
         {products.length ? <div className="catalog-grid">{products.map((product) => {
           const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
           const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;
+          const imageUrl = getMarketplaceImageUrl(product.image_path);
           return <article className="product-card" key={product.id}>
-            <div className="product-placeholder"><PackageSearch size={34} /></div>
+            <div className="product-placeholder">{imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 33vw" className="product-image" /> : <PackageSearch size={34} />}</div>
             <div className="product-detail">
               <span className="pill">{product.condition}</span>
               <h3>{product.name}</h3>
