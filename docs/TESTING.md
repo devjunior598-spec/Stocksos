@@ -29,4 +29,4 @@ Before production, create separate accounts for each role and verify:
 - Paystack test transactions verify exact reference, amount, currency, and provider status; repeated webhooks are idempotent; bad signatures, wrong amounts, failed transactions, and mismatched references do not mark orders paid.
 - The mobile navigation, forms, keyboard focus, errors, empty states, order table overflow, and support content work at phone and desktop widths.
 
-Database checks require a Supabase staging project and Supabase CLI. Paystack checks require test keys and a reachable webhook endpoint. Use synthetic test accounts and data only.
+The core migration is applied to the connected Stocksos Supabase project, and a public-key API smoke test returned the seeded categories. This does not verify sign-in or role-specific RLS: use separate synthetic buyer, supplier, driver, support, and admin accounts in staging. The server-only Supabase secret is not configured in this workspace. Paystack checks require test keys and a reachable webhook endpoint. Use synthetic test accounts and data only.

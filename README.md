@@ -15,7 +15,8 @@ The supplied `STOCKSOS` directory had no application source, `README.md`, `docs/
 - [x] Build admin verification/configuration tools and a separate support case workspace.
 - [x] Add saved suppliers, shareable business profiles and consent-aware SOS Link enquiries.
 - [x] Add unit tests for money conversion, fee calculation, and Paystack webhook signature validation.
-- [ ] Connect Supabase credentials, apply the migration, and verify auth/RLS flows against a real project.
+- [x] Connect the Stocksos Supabase project, apply the core migration, and verify public category reads.
+- [ ] Add the server-only Supabase secret and verify auth/RLS flows with separate role accounts.
 - [ ] Configure an outbound notification worker and validate email delivery.
 - [ ] Complete the launch items in [Production gaps](#production-gaps) before onboarding live businesses.
 
@@ -83,7 +84,7 @@ npm run lint
 npm run build
 ```
 
-Read [docs/TESTING.md](docs/TESTING.md) for current coverage and the live-account test matrix. The migration has not been applied in this workspace: Docker/Supabase credentials are not available here, so database integration, RLS, authentication, payment-provider, and end-to-end flows still need staging verification.
+Read [docs/TESTING.md](docs/TESTING.md) for current coverage and the live-account test matrix. The core migration is applied to the connected Stocksos Supabase project, and the public categories API has been smoke-tested. Role-specific auth/RLS flows and payment-provider flows still need staging verification. The server-only Supabase secret and Paystack credentials are not configured in this workspace.
 
 ## Production gaps
 
@@ -98,6 +99,6 @@ This is a substantial foundation, not a claim that every phase in the brief is c
 - Configurable plan prices/benefits are displayed and editable by admins. Subscription checkout, renewal, entitlements, and backend plan restrictions are not implemented.
 - Refund records exist in the schema, but refund request/approval/provider processing and reconciliation jobs are not implemented.
 - Account deletion requests, notification preferences, email/WhatsApp/push dispatch, live database subscriptions, and StockSOS AI features are not implemented.
-- There is no live Supabase project, Paystack credential, or deployment attached to this workspace. No production payment or fulfilled order was simulated.
+- The core schema and public-key connection are set up in Supabase. The server-only Supabase secret, Paystack credential, and deployment are not configured in this workspace. No production payment or fulfilled order was simulated.
 
 Before launch, complete live security/RLS review, Nigerian data/privacy and marketplace legal review, staging tests with multiple roles, Paystack settlement verification, email worker operation, error monitoring, and support/refund/dispute procedures.
