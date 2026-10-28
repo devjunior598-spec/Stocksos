@@ -99,7 +99,7 @@ This is a substantial foundation, not a claim that every phase in the brief is c
 - The schema includes order groups for future multi-supplier fulfilment; transactions currently accept one supplier quotation for an entire request.
 - Delivery is manually arranged with a city-matched partner workflow and area-level pickup/drop-off. No GPS, confirmation codes, earnings, cancellation/reassignment, dispute, or payout workflow exists.
 - Configurable plan prices/benefits are displayed and editable by admins. Subscription checkout, renewal, entitlements, and backend plan restrictions are not implemented.
-- Refund and dispute requests, audit records, verified buyer reviews, and revenue reporting are implemented. Admin refund approval, provider refund execution, downloadable PDF receipts, and reconciliation jobs still require staging/provider verification.
+- Refund and dispute requests, audit records, verified buyer reviews, revenue reporting, and server-authorized PDF receipt downloads are implemented. Admin refund approval, provider refund execution, and reconciliation jobs still require staging/provider verification.
 - Account deletion requests, notification preferences, email/WhatsApp/push dispatch, live database subscriptions, and StockSOS AI features are not implemented.
 - The core schema and public-key connection are set up in Supabase. A non-production staging project was used for the marketplace workflow test; verify its pause completed in Supabase. The server-only Supabase secret, Paystack credential, and deployment are not configured in this workspace. No production payment or fulfilled order was simulated.
 
