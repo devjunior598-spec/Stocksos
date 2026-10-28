@@ -167,8 +167,12 @@ export async function createSOSAction(formData: FormData) {
     categoryId: z.uuid(),
     productName: z.string().trim().min(2).max(180),
     quantity: z.coerce.number().int().min(1).max(1000000),
+    country: z.string().trim().length(2).regex(/^[A-Z]{2}$/),
+    region: z.string().trim().min(2).max(100),
     city: z.string().trim().min(2).max(100),
+    postalCode: z.string().trim().max(20).optional(),
     area: z.string().trim().max(100).optional(),
+    address: z.string().trim().max(240).optional(),
     deliveryMethod: z.enum(["pickup", "delivery", "flexible"]),
     urgency: z.enum(["immediately", "within_30_minutes", "within_2_hours", "today", "scheduled"]),
     specifications: z.string().trim().max(1000).optional(),
@@ -179,8 +183,12 @@ export async function createSOSAction(formData: FormData) {
     categoryId: value(formData, "category_id"),
     productName: value(formData, "product_name"),
     quantity: value(formData, "quantity"),
+    country: value(formData, "country").toUpperCase(),
+    region: value(formData, "region"),
     city: value(formData, "city"),
+    postalCode: value(formData, "postal_code"),
     area: value(formData, "area"),
+    address: value(formData, "address"),
     deliveryMethod: value(formData, "delivery_method"),
     urgency: value(formData, "urgency"),
     specifications: value(formData, "specifications"),
@@ -194,6 +202,13 @@ export async function createSOSAction(formData: FormData) {
     redirect("/sos?error=invalid");
   }
   const supabase = await createSupabaseServerClient();
+  const locationContext = [
+    `Country: ${parsed.data.country}`,
+    `Region: ${parsed.data.region}`,
+    parsed.data.postalCode ? `Postal code: ${parsed.data.postalCode}` : "",
+    parsed.data.address ? `Address: ${parsed.data.address}` : "",
+  ].filter(Boolean).join(" · ");
+  const notes = [locationContext, parsed.data.notes].filter(Boolean).join("\n");
   const { data: requestId, error } = await supabase!.rpc("create_sos_request", {
     p_category_id: parsed.data.categoryId,
     p_product_name: parsed.data.productName,
@@ -205,7 +220,7 @@ export async function createSOSAction(formData: FormData) {
     p_specifications: parsed.data.specifications || null,
     p_preferred_condition: parsed.data.condition,
     p_scheduled_at: schedule?.toISOString() ?? null,
-    p_notes: parsed.data.notes || null,
+    p_notes: notes || null,
     p_photo_path: null,
   });
   if (error || !requestId) redirect("/sos?error=save");

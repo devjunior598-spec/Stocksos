@@ -11,7 +11,7 @@ export function SiteFooter() {
             <span>Stock<span className="brand-accent">SOS</span></span>
           </Link>
           <p>Find the stock you need. Sell the stock you have. Rescue your business in minutes.</p>
-          <span className="footer-location"><span className="status-dot" /> Starting in Ibadan, Nigeria</span>
+          <span className="footer-location"><span className="status-dot" /> Connecting businesses and suppliers worldwide.</span>
         </div>
         <div className="footer-links">
           <div><h3>Marketplace</h3><Link href="/find-stock">Find stock</Link><Link href="/suppliers">Suppliers</Link><Link href="/categories">Categories</Link><Link href="/sos">Send an SOS</Link></div>
