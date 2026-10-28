@@ -72,7 +72,7 @@ SOS creation writes in-app notifications and deduplicated email jobs to `notific
 
 The migration creates a public marketplace image bucket and private verification-document bucket. Suppliers can upload product images. Private verification document upload/review is not yet available in the admin workflow.
 
-Vercel invokes `/api/cron/reconcile-payments` every 10 minutes. Set a strong `CRON_SECRET` in Vercel and the deployment runtime. The route verifies stale Paystack checkouts with Paystack and expires unpaid orders that have no active checkout, restoring held stock. This schedule requires a Vercel plan that supports Cron Jobs; configure an equivalent authenticated scheduler on other hosts.
+Vercel Hobby invokes `/api/cron/reconcile-payments` once daily. Set a strong `CRON_SECRET` in Vercel and the deployment runtime. The route verifies stale Paystack checkouts with Paystack and expires unpaid orders that have no active checkout, restoring held stock. Upgrade to a Vercel plan with frequent Cron Jobs, or configure an equivalent authenticated scheduler on another host, before enabling live payments.
 
 ## Deployment
 
