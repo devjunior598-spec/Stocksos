@@ -15,6 +15,8 @@ export type PublicProduct = {
   businesses: { name: string; city: string; slug: string } | null;
 };
 
+export type ProductQueryResult = { products: PublicProduct[]; error: string | null };
+
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
@@ -26,8 +28,16 @@ export async function getProducts(
   search?: string,
   filters?: { categoryId?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
 ): Promise<PublicProduct[]> {
+  const result = await getProductsResult(search, filters);
+  return result.products;
+}
+
+export async function getProductsResult(
+  search?: string,
+  filters?: { categoryId?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
+): Promise<ProductQueryResult> {
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return [];
+  if (!supabase) return { products: [], error: "Supabase is not configured for this deployment." };
   let query = supabase.from("products")
     .select("id,name,brand,condition,specifications,image_path,business_id,category_id,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,slug)")
     .eq("is_active", true)
@@ -43,8 +53,12 @@ export async function getProducts(
   if (safeCity) query = query.ilike("businesses.city", "%" + safeCity + "%");
   if (typeof filters?.minPriceKobo === "number") query = query.gte("inventory.unit_price_kobo", filters.minPriceKobo);
   if (typeof filters?.maxPriceKobo === "number") query = query.lte("inventory.unit_price_kobo", filters.maxPriceKobo);
-  const { data } = await query;
-  return (data ?? []) as unknown as PublicProduct[];
+  const { data, error } = await query;
+  if (error) {
+    console.error("Marketplace product search failed", { code: error.code, message: error.message });
+    return { products: [], error: "Live stock search is temporarily unavailable. Please try again shortly." };
+  }
+  return { products: (data ?? []) as unknown as PublicProduct[], error: null };
 }
 
 export function getMarketplaceImageUrl(path: string | null | undefined) {

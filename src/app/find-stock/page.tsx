@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, PackageSearch } from "lucide-react";
-import { getCategories, getProducts, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
+import { getCategories, getProductsResult, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { z } from "zod";
 import { VoiceTextField } from "@/components/voice-text-field";
@@ -20,10 +20,11 @@ export default async function FindStockPage({ searchParams }: Props) {
   };
   const min = parsePrice(params.min);
   const max = parsePrice(params.max);
-  const [products, categories] = await Promise.all([
-    getProducts(search, { categoryId, city, minPriceKobo: min, maxPriceKobo: max }),
+  const [productResult, categories] = await Promise.all([
+    getProductsResult(search, { categoryId, city, minPriceKobo: min, maxPriceKobo: max }),
     getCategories(),
   ]);
+  const { products, error: productError } = productResult;
   return (
     <>
       <section className="page-hero"><div className="page-container"><span className="eyebrow">Stock discovery</span><h1>Find stock for your business.</h1><p className="lead">Search public listings from approved suppliers. If you can’t find what you need, send an SOS request.</p>
@@ -31,6 +32,7 @@ export default async function FindStockPage({ searchParams }: Props) {
       </div></section>
       <section className="section-tight"><div className="page-container">
         <SupabaseSetupNotice />
+        {productError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Stock search could not be completed.</strong><p>{productError}</p></div></div> : null}
         <form className="filter-row" action="/find-stock">
           <input type="hidden" name="q" value={search} />
           <div className="form-field"><label htmlFor="category">Category</label><select id="category" name="category" defaultValue={categoryId ?? ""}><option value="">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>

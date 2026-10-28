@@ -70,6 +70,8 @@ main { min-height: 55vh; }
 .voice-field-row { display: flex; gap: 8px; align-items: stretch; }
 .voice-field-row input { min-width: 0; flex: 1; }
 .voice-button { flex: 0 0 auto; white-space: nowrap; }
+.voice-status { display: block; min-height: 20px; }
+.voice-status-listening { color: var(--blue); font-weight: 700; }
 .account-menu { position: relative; }
 .account-menu summary { cursor: pointer; list-style: none; white-space: nowrap; }
 .account-menu summary::-webkit-details-marker { display: none; }
@@ -190,6 +192,7 @@ h3 { font-size: 18px; line-height: 1.3; margin-bottom: 9px; font-weight: 720; }
 .notice { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; color: #73551c; background: #fff8e8; border: 1px solid #f5e7c4; border-radius: 12px; font-size: 13px; }
 .notice strong { display: block; margin-bottom: 2px; }
 .notice p { margin: 0; }
+.notice-error { color: #8b3029; background: #fff2f0; border-color: #ffd9d4; }
 .success-notice { color: #146448; background: #edf9f3; border-color: #d3efdf; }
 .error-notice { color: #9d3e35; background: #fff3f1; border-color: #f4d5d1; }
 .empty-state { padding: 45px 24px; text-align: center; border: 1px dashed #d8e0ed; border-radius: 17px; background: #fbfcfe; }
@@ -310,6 +313,9 @@ h3 { font-size: 18px; line-height: 1.3; margin-bottom: 9px; font-weight: 720; }
   .product-detail { padding: 12px; }
   .page-hero { padding: 49px 0 32px; }
   .search-form { flex-direction: column; }
+  .voice-field-row { grid-template-columns: minmax(0, 1fr); display: grid; gap: 10px; }
+  .voice-field-row input { width: 100%; min-width: 0; }
+  .voice-button, .search-form > .button { width: 100%; }
   .auth-shell { padding: 30px 18px 0; }
   .auth-panel { padding: 23px 18px; }
 }
