@@ -38,3 +38,7 @@ Before production, create separate accounts for each role and verify:
 - The mobile navigation, forms, keyboard focus, errors, empty states, order table overflow, and support content work at phone and desktop widths.
 
 The connected Stocksos project is production. Use an isolated, paused staging project for repeat tests. The server-only Supabase secret is not configured in this workspace. Paystack checks require test keys and a reachable webhook endpoint. Use synthetic test accounts and data only.
+
+## Phase 3 verification status
+
+Migration `20261028124500_phase3_order_operations.sql` adds the supported payment-pending, refund, and dispute order states; buyer-only order issue requests with audit records; verified completed-order reviews; supplier payment-success notifications; and an admin-only revenue summary based on provider-verified payments. TypeScript, lint, unit tests, and a Node 22 production build pass for the application code. The migration has not been applied to production and no live payment credentials are enabled. Before release, apply it to isolated staging and test Paystack test-mode success, failure, abandonment, duplicate webhook delivery, refund handling, evidence storage permissions, review eligibility, and revenue totals.

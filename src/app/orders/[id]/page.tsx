@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, BadgeCheck, PackageCheck, ShieldCheck, Truck } from "lucide-react";
-import { buyerConfirmReceiptAction, updateSupplierOrderStatusAction } from "@/app/actions";
+import { buyerConfirmReceiptAction, createOrderDisputeAction, createOrderReviewAction, updateSupplierOrderStatusAction } from "@/app/actions";
 import { PayButton } from "@/components/pay-button";
 import { requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,7 +16,7 @@ function pill(status: string) {
   return "pill";
 }
 
-export default async function OrderDetailsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ payment?: string; received?: string; error?: string }> }) {
+export default async function OrderDetailsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ payment?: string; received?: string; review?: string; case?: string; error?: string }> }) {
   const user = await requireUser();
   const { id } = await params;
   const query = await searchParams;
@@ -26,13 +26,15 @@ export default async function OrderDetailsPage({ params, searchParams }: { param
   const isBuyer = order.buyer_id === user.id;
   const business = Array.isArray(order.businesses) ? order.businesses[0] : order.businesses;
   const items = Array.isArray(order.order_items) ? order.order_items : [];
-  const [{ data: request }, paymentResult] = await Promise.all([
+  const [{ data: request }, paymentResult, reviewResult] = await Promise.all([
     supabase!.from("sos_requests").select("product_name,quantity,city,area,delivery_method,urgency,specifications").eq("id", order.request_id).maybeSingle(),
     isBuyer ? supabase!.from("payments").select("status,provider_reference,created_at").eq("order_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+    isBuyer ? supabase!.from("reviews").select("id,rating").eq("order_id", id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const paymentReady = process.env.PAYMENTS_ENABLED === "true"
     && Boolean(process.env.PAYSTACK_SECRET_KEY && process.env.SUPABASE_SECRET_KEY);
   const payment = paymentResult.data;
+  const review = reviewResult.data;
 
   return (
     <section className="dashboard-shell">
@@ -42,6 +44,8 @@ export default async function OrderDetailsPage({ params, searchParams }: { param
         {query.payment === "verified" ? <div className="notice success-notice"><BadgeCheck size={17} /><div><strong>Payment verified.</strong><p>The order can now move into fulfilment.</p></div></div> : null}
         {query.payment === "pending" ? <div className="notice"><ShieldCheck size={17} /><div><strong>We’re checking the payment with Paystack.</strong><p>This page will show the order status after the provider response is verified.</p></div></div> : null}
         {query.received ? <div className="notice success-notice"><BadgeCheck size={17} /><div><strong>Receipt confirmed.</strong><p>The order is marked completed.</p></div></div> : null}
+        {query.review ? <div className="notice success-notice"><BadgeCheck size={17} /><div><strong>Review published.</strong><p>Your verified order feedback is now recorded.</p></div></div> : null}
+        {query.case ? <div className="notice success-notice"><ShieldCheck size={17} /><div><strong>Support case created.</strong><p>StockSOS can now review the order issue.</p></div></div> : null}
         {query.error ? <div className="notice error-notice"><div><strong>We couldn’t complete that order action.</strong><p>Refresh this page and try again.</p></div></div> : null}
         <div className="order-detail-grid">
           <div>
@@ -54,6 +58,8 @@ export default async function OrderDetailsPage({ params, searchParams }: { param
             {isBuyer && order.status === "awaiting_payment" ? <section className="panel dashboard-section"><div className="dashboard-section-head"><h2>Payment</h2><ShieldCheck size={17} color="#246bfe" /></div>{payment?.status === "pending" ? <p className="muted small">A payment attempt exists. Continue with the checkout or wait for provider verification.</p> : <p className="muted small">The order is not confirmed until the server verifies Paystack’s transaction and amount.</p>}{paymentReady ? <PayButton orderId={order.id} /> : <div className="notice"><ShieldCheck size={17} /><div><strong>Online payment is not configured.</strong><p>Add the Paystack secret and Supabase server secret before enabling live checkout. No payment is simulated.</p></div></div>}</section> : null}
             {!isBuyer && (order.status === "paid" || order.status === "preparing") ? <section className="panel dashboard-section"><div className="dashboard-section-head"><h2>Update fulfilment</h2><Truck size={17} color="#246bfe" /></div><p className="muted small">Move the order to the next allowed supplier status.</p><form action={updateSupplierOrderStatusAction}><input type="hidden" name="order_id" value={order.id} /><input type="hidden" name="status" value={order.status === "paid" ? "preparing" : "ready_for_pickup"} /><button className="button button-primary" type="submit">{order.status === "paid" ? "Start preparing" : "Mark ready for pickup"}</button></form></section> : null}
             {isBuyer && ["ready_for_pickup", "delivered"].includes(order.status) ? <section className="panel dashboard-section"><div className="dashboard-section-head"><h2>Confirm receipt</h2><BadgeCheck size={17} color="#16845b" /></div><p className="muted small">Confirm only after you have received the items.</p><form action={buyerConfirmReceiptAction}><input type="hidden" name="order_id" value={order.id} /><button className="button button-primary" type="submit">Confirm received</button></form></section> : null}
+            {isBuyer && order.status === "completed" && !review ? <section className="panel dashboard-section"><div className="dashboard-section-head"><h2>Rate this supplier</h2><BadgeCheck size={17} color="#16845b" /></div><p className="muted small">Only verified buyers can review a completed order.</p><form action={createOrderReviewAction}><input type="hidden" name="order_id" value={order.id} /><div className="form-grid"><div className="form-field"><label htmlFor="product_accuracy">Product accuracy</label><select id="product_accuracy" name="product_accuracy" defaultValue="5"><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Fair</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select></div><div className="form-field"><label htmlFor="communication">Communication</label><select id="communication" name="communication" defaultValue="5"><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Fair</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select></div><div className="form-field"><label htmlFor="fulfilment">Fulfilment</label><select id="fulfilment" name="fulfilment" defaultValue="5"><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Fair</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select></div></div><div className="form-field"><label htmlFor="comment">Feedback <span className="muted">(optional)</span></label><textarea id="comment" name="comment" maxLength={1000} /></div><button className="button button-secondary" type="submit">Publish review</button></form></section> : null}
+            {isBuyer && !["cancelled", "refunded"].includes(order.status) ? <section className="panel dashboard-section"><div className="dashboard-section-head"><h2>Report an order issue</h2><ShieldCheck size={17} color="#246bfe" /></div><p className="muted small">Report missing, incorrect or damaged products, supplier non-fulfilment, or request a refund. Refund requests are not confirmations of refunds.</p><form action={createOrderDisputeAction}><input type="hidden" name="order_id" value={order.id} /><div className="form-field"><label htmlFor="case_type">Issue type</label><select id="case_type" name="case_type"><option value="missing_item">Missing item</option><option value="incorrect_product">Incorrect product</option><option value="damaged_product">Damaged product</option><option value="supplier_non_fulfilment">Supplier non-fulfilment</option><option value="refund">Request a refund</option><option value="cancellation">Request cancellation</option></select></div><div className="form-field"><label htmlFor="message">Tell us what happened</label><textarea id="message" name="message" minLength={10} maxLength={5000} required /></div><button className="button button-secondary" type="submit">Send to support</button></form></section> : null}
           </div>
           <aside>
             <section className="panel dashboard-section"><h2>Fulfilment status</h2><div className="status-timeline"><div className={"timeline-step " + (order.status !== "awaiting_payment" ? "timeline-done" : "timeline-current")}><span /> <div><strong>Quotation accepted</strong><small>Supplier and terms selected</small></div></div><div className={"timeline-step " + (["paid", "preparing", "ready_for_pickup", "dispatched", "delivered", "completed"].includes(order.status) ? "timeline-done" : order.status === "awaiting_payment" ? "timeline-current" : "")}><span /><div><strong>Payment verified</strong><small>Provider confirmation updates the order</small></div></div><div className={"timeline-step " + (["preparing", "ready_for_pickup", "dispatched", "delivered", "completed"].includes(order.status) ? "timeline-done" : "")}><span /><div><strong>Supplier fulfilment</strong><small>Preparation and pickup or delivery arrangement</small></div></div><div className={"timeline-step " + (["completed"].includes(order.status) ? "timeline-done" : "")}><span /><div><strong>Completed</strong><small>Buyer confirms receipt</small></div></div></div></section>

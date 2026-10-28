@@ -18,6 +18,7 @@ The supplied `STOCKSOS` directory had no application source, `README.md`, `docs/
 - [x] Connect the Stocksos Supabase project, apply the core migration, and verify public category reads.
 - [x] Verify the buyer-to-supplier SOS, quotation, acceptance, and order workflow in isolated Supabase staging accounts.
 - [x] Fix and regression-test supplier match row-level security for request owners and matched suppliers.
+- [x] Add buyer order issue/refund requests, verified completed-order reviews, and admin revenue metrics.
 - [ ] Configure an outbound notification worker and validate email delivery.
 - [ ] Complete the launch items in [Production gaps](#production-gaps) before onboarding live businesses.
 
@@ -45,7 +46,7 @@ Open `http://localhost:3000`. With no Supabase variables, public pages render re
    supabase db push
    ```
 
-   The migrations are `supabase/migrations/20261028042618_core_marketplace.sql` and `supabase/migrations/20261028103317_fix_sos_match_rls.sql`. Apply them to staging first and verify RLS with separate role accounts.
+   The migrations are `supabase/migrations/20261028042618_core_marketplace.sql`, `supabase/migrations/20261028103317_fix_sos_match_rls.sql`, and `supabase/migrations/20261028124500_phase3_order_operations.sql`. Apply them to staging first and verify RLS with separate role accounts.
 4. To bootstrap the first administrator, use the Supabase SQL editor as the project owner and set the role for a known profile UUID:
 
    ```sql
@@ -85,7 +86,7 @@ npm run lint
 npm run build
 ```
 
-Read [docs/TESTING.md](docs/TESTING.md) for coverage and staging results. The buyer/supplier SOS workflow, inventory photo storage, authorization checks, and order creation were exercised against isolated staging data. Email confirmation delivery and Paystack provider transactions were not tested. The server-only Supabase secret and Paystack credentials are not configured in this workspace.
+Read [docs/TESTING.md](docs/TESTING.md) for coverage and staging results. The buyer/supplier SOS workflow, inventory photo storage, authorization checks, and order creation were exercised against isolated staging data. Phase 3 payment-provider, dispute, review, and revenue code is implemented but requires a fresh staging migration and Paystack test credentials before it can be claimed as integration-tested.
 
 ## Production gaps
 
@@ -98,7 +99,7 @@ This is a substantial foundation, not a claim that every phase in the brief is c
 - The schema includes order groups for future multi-supplier fulfilment; transactions currently accept one supplier quotation for an entire request.
 - Delivery is manually arranged with a city-matched partner workflow and area-level pickup/drop-off. No GPS, confirmation codes, earnings, cancellation/reassignment, dispute, or payout workflow exists.
 - Configurable plan prices/benefits are displayed and editable by admins. Subscription checkout, renewal, entitlements, and backend plan restrictions are not implemented.
-- Refund records exist in the schema, but refund request/approval/provider processing and reconciliation jobs are not implemented.
+- Refund and dispute requests, audit records, verified buyer reviews, and revenue reporting are implemented. Admin refund approval, provider refund execution, downloadable PDF receipts, and reconciliation jobs still require staging/provider verification.
 - Account deletion requests, notification preferences, email/WhatsApp/push dispatch, live database subscriptions, and StockSOS AI features are not implemented.
 - The core schema and public-key connection are set up in Supabase. A non-production staging project was used for the marketplace workflow test; verify its pause completed in Supabase. The server-only Supabase secret, Paystack credential, and deployment are not configured in this workspace. No production payment or fulfilled order was simulated.
 

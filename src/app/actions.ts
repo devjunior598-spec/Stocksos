@@ -697,3 +697,58 @@ export async function markNotificationReadAction(formData: FormData) {
   revalidatePath("/supplier");
   redirect(destination);
 }
+
+export async function createOrderDisputeAction(formData: FormData) {
+  await requireUser();
+  const parsed = z.object({
+    orderId: z.uuid(),
+    caseType: z.enum(["cancellation", "refund", "missing_item", "incorrect_product", "damaged_product", "supplier_non_fulfilment"]),
+    message: z.string().trim().min(10).max(5000),
+  }).safeParse({
+    orderId: value(formData, "order_id"),
+    caseType: value(formData, "case_type"),
+    message: value(formData, "message"),
+  });
+  if (!parsed.success) redirect("/dashboard?error=case");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.rpc("create_order_dispute", {
+    p_order_id: parsed.data.orderId,
+    p_case_type: parsed.data.caseType,
+    p_message: parsed.data.message,
+    p_evidence_paths: [],
+  });
+  if (error) redirect("/orders/" + parsed.data.orderId + "?error=case");
+  revalidatePath("/orders/" + parsed.data.orderId);
+  revalidatePath("/dashboard");
+  revalidatePath("/admin");
+  redirect("/orders/" + parsed.data.orderId + "?case=created");
+}
+
+export async function createOrderReviewAction(formData: FormData) {
+  await requireUser();
+  const parsed = z.object({
+    orderId: z.uuid(),
+    productAccuracy: z.coerce.number().int().min(1).max(5),
+    communication: z.coerce.number().int().min(1).max(5),
+    fulfilment: z.coerce.number().int().min(1).max(5),
+    comment: z.string().trim().max(1000),
+  }).safeParse({
+    orderId: value(formData, "order_id"),
+    productAccuracy: value(formData, "product_accuracy"),
+    communication: value(formData, "communication"),
+    fulfilment: value(formData, "fulfilment"),
+    comment: value(formData, "comment"),
+  });
+  if (!parsed.success) redirect("/dashboard?error=review");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.rpc("create_order_review", {
+    p_order_id: parsed.data.orderId,
+    p_product_accuracy: parsed.data.productAccuracy,
+    p_communication: parsed.data.communication,
+    p_fulfilment: parsed.data.fulfilment,
+    p_comment: parsed.data.comment || null,
+  });
+  if (error) redirect("/orders/" + parsed.data.orderId + "?error=review");
+  revalidatePath("/orders/" + parsed.data.orderId);
+  redirect("/orders/" + parsed.data.orderId + "?review=created");
+}

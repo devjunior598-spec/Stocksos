@@ -12,7 +12,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   await requireAdmin();
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const [users, verifiedBusinesses, pendingBusinesses, openRequests, completedOrders, paymentFailures, pendingDrivers, businessList, driverList, supportCases, planList, feeSetting] = await Promise.all([
+  const [users, verifiedBusinesses, pendingBusinesses, openRequests, completedOrders, paymentFailures, pendingDrivers, businessList, driverList, supportCases, planList, feeSetting, revenueResult] = await Promise.all([
     supabase!.from("profiles").select("id", { count: "exact", head: true }),
     supabase!.from("businesses").select("id", { count: "exact", head: true }).eq("verification_status", "approved"),
     supabase!.from("businesses").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
@@ -25,11 +25,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     supabase!.from("support_cases").select("id,user_id,subject,message,status,created_at,order_id").in("status", ["open", "in_progress"]).order("created_at", { ascending: false }).limit(8),
     supabase!.from("subscription_plans").select("id,name,monthly_price_kobo,benefits,is_active").order("monthly_price_kobo"),
     supabase!.from("platform_settings").select("value").eq("key", "marketplace_fee_bps").maybeSingle(),
+    supabase!.rpc("admin_revenue_summary", { p_since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }),
   ]);
   const pendingBusinessList = (businessList.data ?? []) as { id: string; name: string; city: string; area: string | null; phone: string | null; email: string | null; registration_number: string | null; created_at: string; category_name: string | null }[];
   const pendingDriverList = driverList.data ?? [];
   const plans = (planList.data ?? []) as { id: string; name: string; monthly_price_kobo: number; benefits: string[]; is_active: boolean }[];
   const feeBps = Number(feeSetting.data?.value ?? 0);
+  const revenue = Array.isArray(revenueResult.data) ? revenueResult.data[0] : revenueResult.data;
 
   return (
     <section className="dashboard-shell">
@@ -46,6 +48,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <article className="stat-card"><span>Failed payments</span><strong>{countValue(paymentFailures)}</strong><span className="small">Provider records marked failed</span></article>
           <article className="stat-card"><span>Delivery applications</span><strong>{countValue(pendingDrivers)}</strong><span className="small">Partners awaiting review</span></article>
           <article className="stat-card"><span>Marketplace fee</span><strong>{(feeBps / 100).toFixed(2)}%</strong><span className="small">Current configured fee</span></article>
+          <article className="stat-card"><span>Verified GTV · 30 days</span><strong>₦{((Number(revenue?.gross_transaction_value_kobo ?? 0)) / 100).toLocaleString("en-NG", { maximumFractionDigits: 2 })}</strong><span className="small">Successful provider-verified payments</span></article>
+          <article className="stat-card"><span>Net platform revenue · 30 days</span><strong>₦{((Number(revenue?.net_platform_revenue_kobo ?? 0)) / 100).toLocaleString("en-NG", { maximumFractionDigits: 2 })}</strong><span className="small">Fees less recorded refunded fees</span></article>
         </div>
         <div className="dashboard-columns admin-columns">
           <div>
