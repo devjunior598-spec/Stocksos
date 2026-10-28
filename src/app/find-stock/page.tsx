@@ -4,6 +4,7 @@ import { ArrowRight, PackageSearch } from "lucide-react";
 import { getCategories, getProducts, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { z } from "zod";
+import { VoiceTextField } from "@/components/voice-text-field";
 
 type Props = { searchParams: Promise<{ q?: string; category?: string; city?: string; min?: string; max?: string }> };
 
@@ -26,7 +27,7 @@ export default async function FindStockPage({ searchParams }: Props) {
   return (
     <>
       <section className="page-hero"><div className="page-container"><span className="eyebrow">Stock discovery</span><h1>Find stock for your business.</h1><p className="lead">Search public listings from approved suppliers. If you can’t find what you need, send an SOS request.</p>
-        <form className="search-form" action="/find-stock"><input className="search-input" name="q" type="search" defaultValue={search} placeholder="Product name or brand" aria-label="Search products" /><button className="button button-primary" type="submit">Search stock <ArrowRight size={15} /></button></form>
+        <form className="search-form" action="/find-stock"><VoiceTextField id="stock-search" name="q" defaultValue={search} placeholder="Product name, brand or spoken description" maxLength={80} /><button className="button button-primary" type="submit">Search stock <ArrowRight size={15} /></button></form><p className="form-hint">Search checks verified supplier names, brands and specifications. Results always come from live inventory.</p>
       </div></section>
       <section className="section-tight"><div className="page-container">
         <SupabaseSetupNotice />

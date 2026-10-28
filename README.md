@@ -19,6 +19,7 @@ The supplied `STOCKSOS` directory had no application source, `README.md`, `docs/
 - [x] Verify the buyer-to-supplier SOS, quotation, acceptance, and order workflow in isolated Supabase staging accounts.
 - [x] Fix and regression-test supplier match row-level security for request owners and matched suppliers.
 - [x] Add buyer order issue/refund requests, verified completed-order reviews, and admin revenue metrics.
+- [x] Add deterministic supplier match scoring, delayed SOS network expansion, and browser voice transcription with editable confirmation.
 - [ ] Configure an outbound notification worker and validate email delivery.
 - [ ] Complete the launch items in [Production gaps](#production-gaps) before onboarding live businesses.
 

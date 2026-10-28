@@ -4,6 +4,7 @@ import { createSOSAction } from "@/app/actions";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { getCategories } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
+import { VoiceTextField } from "@/components/voice-text-field";
 
 type Props = { searchParams: Promise<{ error?: string }> };
 
@@ -22,7 +23,7 @@ export default async function SOSPage({ searchParams }: Props) {
             <div className="auth-panel">
               <form action={createSOSAction}>
                 <div className="form-grid">
-                  <div className="form-field"><label htmlFor="product_name">What do you need?</label><input id="product_name" name="product_name" required minLength={2} maxLength={180} placeholder="e.g. 12 mm plywood sheets" /></div>
+                  <div className="form-field"><label htmlFor="product_name">What do you need?</label><VoiceTextField id="product_name" name="product_name" required maxLength={180} placeholder="e.g. 12 mm plywood sheets" /></div>
                   <div className="form-field"><label htmlFor="category_id">Category</label><select id="category_id" name="category_id" required defaultValue=""><option value="" disabled>Select a category</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></div>
                 </div>
                 <div className="form-grid">

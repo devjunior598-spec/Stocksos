@@ -37,7 +37,7 @@ export async function getProducts(
     .eq("businesses.visibility", "public")
     .limit(40);
   const safeSearch = search?.trim().replace(/[^a-z0-9\s-]/gi, "").slice(0, 80);
-  if (safeSearch) query = query.or("name.ilike.%" + safeSearch + "%,brand.ilike.%" + safeSearch + "%");
+  if (safeSearch) query = query.or("name.ilike.%" + safeSearch + "%,brand.ilike.%" + safeSearch + "%,specifications.ilike.%" + safeSearch + "%");
   if (filters?.categoryId) query = query.eq("category_id", filters.categoryId);
   const safeCity = filters?.city?.trim().replace(/[^a-z\s-]/gi, "").slice(0, 60);
   if (safeCity) query = query.ilike("businesses.city", "%" + safeCity + "%");

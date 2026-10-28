@@ -25,7 +25,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     supabase!.from("support_cases").select("id,user_id,subject,message,status,created_at,order_id").in("status", ["open", "in_progress"]).order("created_at", { ascending: false }).limit(8),
     supabase!.from("subscription_plans").select("id,name,monthly_price_kobo,benefits,is_active").order("monthly_price_kobo"),
     supabase!.from("platform_settings").select("value").eq("key", "marketplace_fee_bps").maybeSingle(),
-    supabase!.rpc("admin_revenue_summary", { p_since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }),
+    supabase!.rpc("admin_revenue_summary"),
   ]);
   const pendingBusinessList = (businessList.data ?? []) as { id: string; name: string; city: string; area: string | null; phone: string | null; email: string | null; registration_number: string | null; created_at: string; category_name: string | null }[];
   const pendingDriverList = driverList.data ?? [];

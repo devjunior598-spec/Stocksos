@@ -66,6 +66,10 @@ main { min-height: 55vh; }
 .primary-nav a:hover, .header-login:hover { color: var(--blue); }
 .header-actions { display: flex; align-items: center; gap: 24px; }
 .header-login { color: #53617a; font-size: 13px; font-weight: 650; }
+.voice-field { width: 100%; }
+.voice-field-row { display: flex; gap: 8px; align-items: stretch; }
+.voice-field-row input { min-width: 0; flex: 1; }
+.voice-button { flex: 0 0 auto; white-space: nowrap; }
 .account-menu { position: relative; }
 .account-menu summary { cursor: pointer; list-style: none; white-space: nowrap; }
 .account-menu summary::-webkit-details-marker { display: none; }

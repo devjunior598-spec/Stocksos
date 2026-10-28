@@ -39,6 +39,12 @@ Before production, create separate accounts for each role and verify:
 
 The connected Stocksos project is production. Use an isolated, paused staging project for repeat tests. The server-only Supabase secret is not configured in this workspace. Paystack checks require test keys and a reachable webhook endpoint. Use synthetic test accounts and data only.
 
+## Phase 4 foundation
+
+Migration `20261028130000_phase4_smart_matching.sql` adds deterministic supplier scoring and a delayed, duplicate-safe SOS expansion job. Exact-city matches retain the highest score; eligible approved suppliers in other cities are added only after the configured delay and still require verified public stock. The cron route invokes expansion when the migration exists and safely continues on older schemas until it is applied. Product search now includes supplier specifications, and voice transcription is an editable browser enhancement in English (`en-NG`); it never submits or broadcasts without the user pressing the existing SOS button.
+
+The migration and expansion job still need an isolated staging run covering delayed expansion, duplicate notification prevention, cross-account RLS, and a no-AI-service fallback. AI product identification, image recognition, Nigerian Pidgin/Yoruba speech, demand prediction, and multi-supplier atomic ordering remain intentionally unenabled until an approved provider and test data are available.
+
 ## Phase 3 verification status
 
 Migration `20261028124500_phase3_order_operations.sql` adds the supported payment-pending, refund, and dispute order states; buyer-only order issue requests with audit records; verified completed-order reviews; supplier payment-success notifications; and an admin-only revenue summary based on provider-verified payments. A server-authorized PDF receipt endpoint is available for verified paid orders. TypeScript, lint, unit tests, and a Node 22 production build pass for the application code. The migration has not been applied to production and no live payment credentials are enabled. Before release, apply it to isolated staging and test Paystack test-mode success, failure, abandonment, duplicate webhook delivery, refund handling, evidence storage permissions, review eligibility, receipt access, and revenue totals.
