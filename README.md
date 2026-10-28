@@ -47,7 +47,7 @@ Open `http://localhost:3000`. With no Supabase variables, public pages render re
    supabase db push
    ```
 
-   The migrations are `supabase/migrations/20261028042618_core_marketplace.sql`, `supabase/migrations/20261028103317_fix_sos_match_rls.sql`, and `supabase/migrations/20261028124500_phase3_order_operations.sql`. Apply them to staging first and verify RLS with separate role accounts.
+   The migrations are `supabase/migrations/20261028052319_core_marketplace.sql`, `supabase/migrations/20261028103317_fix_sos_match_rls.sql`, `supabase/migrations/20261028124500_phase3_order_operations.sql`, and `supabase/migrations/20261028130000_phase4_smart_matching.sql`. Apply them to staging first and verify RLS with separate role accounts.
 4. To bootstrap the first administrator, use the Supabase SQL editor as the project owner and set the role for a known profile UUID:
 
    ```sql
