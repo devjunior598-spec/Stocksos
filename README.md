@@ -16,7 +16,8 @@ The supplied `STOCKSOS` directory had no application source, `README.md`, `docs/
 - [x] Add saved suppliers, shareable business profiles and consent-aware SOS Link enquiries.
 - [x] Add unit tests for money conversion, fee calculation, and Paystack webhook signature validation.
 - [x] Connect the Stocksos Supabase project, apply the core migration, and verify public category reads.
-- [ ] Add the server-only Supabase secret and verify auth/RLS flows with separate role accounts.
+- [x] Verify the buyer-to-supplier SOS, quotation, acceptance, and order workflow in isolated Supabase staging accounts.
+- [x] Fix and regression-test supplier match row-level security for request owners and matched suppliers.
 - [ ] Configure an outbound notification worker and validate email delivery.
 - [ ] Complete the launch items in [Production gaps](#production-gaps) before onboarding live businesses.
 
@@ -44,7 +45,7 @@ Open `http://localhost:3000`. With no Supabase variables, public pages render re
    supabase db push
    ```
 
-   The migration is `supabase/migrations/20261028042618_core_marketplace.sql`. It creates marketplace tables and storage buckets; apply it first to a non-production project and verify RLS with separate buyer, supplier, driver, support, and admin accounts.
+   The migrations are `supabase/migrations/20261028042618_core_marketplace.sql` and `supabase/migrations/20261028103317_fix_sos_match_rls.sql`. Apply them to staging first and verify RLS with separate role accounts.
 4. To bootstrap the first administrator, use the Supabase SQL editor as the project owner and set the role for a known profile UUID:
 
    ```sql
@@ -67,7 +68,7 @@ Use Paystack's test key in a non-production project first. A payment remains una
 
 SOS creation writes in-app notifications and deduplicated email jobs to `notification_jobs`. There is no email/WhatsApp worker in this checkout, so external messages are queued but not sent. Connect and operate a retrying background worker before promising supplier email notifications. No WhatsApp, browser push, or realtime subscription is currently wired.
 
-The migration creates a public marketplace image bucket and private verification-document bucket. Product image and supplier verification document upload interfaces are not implemented yet; do not tell suppliers that document upload or image upload is available.
+The migration creates a public marketplace image bucket and private verification-document bucket. Suppliers can upload product images. Private verification document upload/review is not yet available in the admin workflow.
 
 Vercel invokes `/api/cron/reconcile-payments` every 10 minutes. Set a strong `CRON_SECRET` in Vercel and the deployment runtime. The route verifies stale Paystack checkouts with Paystack and expires unpaid orders that have no active checkout, restoring held stock. This schedule requires a Vercel plan that supports Cron Jobs; configure an equivalent authenticated scheduler on other hosts.
 
@@ -84,14 +85,14 @@ npm run lint
 npm run build
 ```
 
-Read [docs/TESTING.md](docs/TESTING.md) for current coverage and the live-account test matrix. The core migration is applied to the connected Stocksos Supabase project, and the public categories API has been smoke-tested. Role-specific auth/RLS flows and payment-provider flows still need staging verification. The server-only Supabase secret and Paystack credentials are not configured in this workspace.
+Read [docs/TESTING.md](docs/TESTING.md) for coverage and staging results. The buyer/supplier SOS workflow, inventory photo storage, authorization checks, and order creation were exercised against isolated staging data. Email confirmation delivery and Paystack provider transactions were not tested. The server-only Supabase secret and Paystack credentials are not configured in this workspace.
 
 ## Production gaps
 
 This is a substantial foundation, not a claim that every phase in the brief is complete. Current limits include:
 
 - Supplier business and driver approvals work, but uploading/reading private verification documents, request-more-information, and suspension investigation workflows need a complete admin process.
-- Inventory create/edit, public visibility, and availability work. Photo upload, deletion of eligible listings, bulk pricing, low-stock rules, and performance analytics are not implemented.
+- Inventory create/edit, product photo upload, public visibility, and availability work. Bulk pricing, low-stock rules, and performance analytics are not implemented.
 - Supplier matching is a transparent exact-category/city/positive-stock rule. It does not use radius, response/fulfilment scores, realtime updates, AI, or external message delivery.
 - SOS Link supports public profiles, a customer enquiry, business-side status updates, and explicit consent before marking a referral. It does not yet turn an enquiry into an automated network-wide sourcing request or provide referral analytics.
 - The schema includes order groups for future multi-supplier fulfilment; transactions currently accept one supplier quotation for an entire request.
@@ -99,6 +100,6 @@ This is a substantial foundation, not a claim that every phase in the brief is c
 - Configurable plan prices/benefits are displayed and editable by admins. Subscription checkout, renewal, entitlements, and backend plan restrictions are not implemented.
 - Refund records exist in the schema, but refund request/approval/provider processing and reconciliation jobs are not implemented.
 - Account deletion requests, notification preferences, email/WhatsApp/push dispatch, live database subscriptions, and StockSOS AI features are not implemented.
-- The core schema and public-key connection are set up in Supabase. The server-only Supabase secret, Paystack credential, and deployment are not configured in this workspace. No production payment or fulfilled order was simulated.
+- The core schema and public-key connection are set up in Supabase. A non-production staging project was used for the marketplace workflow test; verify its pause completed in Supabase. The server-only Supabase secret, Paystack credential, and deployment are not configured in this workspace. No production payment or fulfilled order was simulated.
 
 Before launch, complete live security/RLS review, Nigerian data/privacy and marketplace legal review, staging tests with multiple roles, Paystack settlement verification, email worker operation, error monitoring, and support/refund/dispute procedures.

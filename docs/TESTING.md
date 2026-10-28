@@ -11,7 +11,15 @@ npm run lint
 npm run build
 ```
 
-Current Vitest coverage exercises integer naira/kobo conversion, fee arithmetic (including pickup and rounding), and Paystack webhook HMAC verification against the exact raw request body. It does not replace database or provider integration tests.
+Current Vitest coverage exercises integer naira/kobo conversion, fee arithmetic (including pickup and rounding), and Paystack webhook HMAC verification against the exact raw request body. The SQL regression at `tests/db/sos_match_rls.sql` covers buyer, matched supplier, and unrelated-user visibility against the database.
+
+## Completed staging run
+
+A separate Frankfurt Supabase staging project was used for synthetic buyer, supplier, admin, and unrelated-user accounts. A pause was requested after testing; confirm the project shows Paused in Supabase before considering cleanup complete. The run verified login, supplier approval, inventory creation, product image upload and public retrieval, SOS matching and in-app notification, quotation submission, buyer acceptance, order creation, stock reservation, and cross-account access denial. Duplicate acceptance and unrelated-user storage/upload access were rejected. No production test accounts or orders were created, and payments were not enabled.
+
+The run exposed recursive RLS checks between SOS requests and supplier matches. Migration `20261028103317_fix_sos_match_rls.sql` replaces the recursive ownership lookup with a restricted `SECURITY DEFINER` helper. It was applied to staging and the connected production schema; `tests/db/sos_match_rls.sql` was then executed against staging. The UI was also exercised in a browser through buyer SOS creation, supplier quotation, and buyer acceptance/order detail.
+
+Email confirmation delivery, password-recovery email delivery, driver/support role scenarios, Paystack transactions, and responsive layouts beyond the phone and desktop checks remain unverified. The accounts were confirmed directly for isolated staging testing, so that run does not prove SMTP configuration or real verification links.
 
 ## Staging test matrix
 
@@ -29,4 +37,4 @@ Before production, create separate accounts for each role and verify:
 - Paystack test transactions verify exact reference, amount, currency, and provider status; repeated webhooks are idempotent; bad signatures, wrong amounts, failed transactions, and mismatched references do not mark orders paid.
 - The mobile navigation, forms, keyboard focus, errors, empty states, order table overflow, and support content work at phone and desktop widths.
 
-The core migration is applied to the connected Stocksos Supabase project, and a public-key API smoke test returned the seeded categories. This does not verify sign-in or role-specific RLS: use separate synthetic buyer, supplier, driver, support, and admin accounts in staging. The server-only Supabase secret is not configured in this workspace. Paystack checks require test keys and a reachable webhook endpoint. Use synthetic test accounts and data only.
+The connected Stocksos project is production. Use an isolated, paused staging project for repeat tests. The server-only Supabase secret is not configured in this workspace. Paystack checks require test keys and a reachable webhook endpoint. Use synthetic test accounts and data only.

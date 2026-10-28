@@ -29,6 +29,7 @@ export async function signInAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect("/login?error=invalid");
   const next = value(formData, "next");
+  revalidatePath("/", "layout");
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
 }
 
@@ -87,7 +88,11 @@ export async function updatePasswordAction(formData: FormData) {
 
 export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
-  if (supabase) await supabase.auth.signOut();
+  if (supabase) {
+    const { error } = await supabase.auth.signOut();
+    if (error) redirect("/dashboard?error=logout");
+  }
+  revalidatePath("/", "layout");
   redirect("/");
 }
 
