@@ -97,7 +97,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     const clean = transcript.trim().slice(0, maxLength ?? 500);
     if (!clean) return;
     setValue(clean);
-    if (name === "q") void askStockSOS(clean);
+    void askStockSOS(clean);
   }
 
   async function startTranscriptionFallback() {
@@ -133,7 +133,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
         setListening(false);
         const blob = new Blob(audioChunks.current, { type: nextRecorder.mimeType || "audio/webm" });
         if (!blob.size) { setError("No audio was captured. Tap Speak and try again."); return; }
-        if (blob.size > 8 * 1024 * 1024) { setError("That recording was too large. Please record a shorter request."); return; }
+        if (blob.size > 4 * 1024 * 1024) { setError("That recording was too large. Please record a shorter request."); return; }
         setTranscribing(true);
         try {
           const formData = new FormData();
@@ -177,7 +177,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     const RecognitionConstructor = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
     if (!RecognitionConstructor) {
       if (audioConsent) await startTranscriptionFallback();
-      else setError("This browser does not support built-in voice input. Select secure backup transcription below, or type your request.");
+      else setError(fallbackAvailable ? "This browser does not support built-in voice input. Select secure backup transcription below, or type the request." : "This browser does not support built-in voice input. Secure backup transcription is not configured yet; please type the request.");
       return;
     }
     const next = new RecognitionConstructor();
@@ -193,7 +193,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     };
     next.onresult = (event) => {
       const transcript = Array.from(event.results).map((result) => result[0]?.transcript ?? "").join(" ").trim();
-      if (transcript) setValue((current) => current ? `${current} ${transcript}` : transcript);
+      if (transcript) acceptTranscript(transcript);
     };
     next.onerror = (event) => {
       setListening(false);
