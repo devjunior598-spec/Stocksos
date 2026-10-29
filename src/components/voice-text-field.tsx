@@ -27,7 +27,7 @@ function recognitionErrorMessage(code: string | undefined) {
     case "no-speech":
       return "No speech was detected. Move somewhere quiet, tap Speak, and say the product request clearly.";
     case "network":
-      return "Your browser could not reach its speech service. Check your connection or type the request instead.";
+      return "Your browser’s speech service is unavailable. On Android, try Chrome with Google voice services enabled, or type the request instead.";
     case "language-not-supported":
       return "This browser does not support English (Nigeria) voice input. Type the request instead.";
     case "aborted":
@@ -58,7 +58,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     recognition.current?.stop();
   }, []);
 
-  function toggleVoice() {
+  async function toggleVoice() {
     if (listening) {
       stopping.current = true;
       recognition.current?.stop();
@@ -75,8 +75,24 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
       setError("This browser does not support voice input. Use the latest Chrome, Edge, Safari, or Samsung Internet, or type the request instead.");
       return;
     }
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (cause) {
+        const code = cause instanceof DOMException ? cause.name : undefined;
+        setError(code === "NotAllowedError"
+          ? "Microphone access was blocked. Allow Microphone for StockSOS in your browser settings, then try Speak again."
+          : code === "NotFoundError"
+            ? "No microphone was found. Check your phone microphone and try again."
+            : "Microphone access could not be started. Check browser permissions or type the request instead.");
+        return;
+      }
+    }
     const next = new RecognitionConstructor();
-    next.lang = "en-NG";
+    // en-US is supported by the Android speech service more consistently than
+    // en-NG. The transcript remains editable, so users can speak naturally.
+    next.lang = "en-US";
     next.interimResults = false;
     next.continuous = false;
     next.onstart = () => {
