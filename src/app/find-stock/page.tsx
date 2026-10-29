@@ -28,7 +28,7 @@ export default async function FindStockPage({ searchParams }: Props) {
   return (
     <>
       <section className="page-hero"><div className="page-container"><span className="eyebrow">Stock discovery</span><h1>Find stock for your business.</h1><p className="lead">Search public listings from approved suppliers. If you can’t find what you need, send an SOS request.</p>
-        <form className="search-form" action="/find-stock"><VoiceTextField id="stock-search" name="q" defaultValue={search} placeholder="Product name, brand or spoken description" maxLength={80} /><button className="button button-primary" type="submit">Search stock <ArrowRight size={15} /></button></form><p className="form-hint">Search checks verified supplier names, brands and specifications. Results always come from live inventory.</p>
+        <form className="search-form" action="/find-stock"><VoiceTextField id="stock-search" name="q" defaultValue={search} placeholder="Product name, brand or spoken description" maxLength={80} fallbackAvailable={Boolean(process.env.OPENAI_API_KEY)} /><button className="button button-primary" type="submit">Search stock <ArrowRight size={15} /></button></form><p className="form-hint">Search checks verified supplier names, brands and specifications. Results always come from live inventory.</p>
       </div></section>
       <section className="section-tight"><div className="page-container">
         <SupabaseSetupNotice />
