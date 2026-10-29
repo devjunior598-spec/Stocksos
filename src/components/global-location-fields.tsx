@@ -24,6 +24,7 @@ function countryName(code: string) {
 
 export function GlobalLocationFields() {
   const [country, setCountry] = useState("");
+  const [countryQuery, setCountryQuery] = useState("");
   const countries = useMemo(() => {
     return COUNTRY_CODES.map((code) => ({ code, name: countryName(code) })).sort((a, b) => a.name.localeCompare(b.name));
   }, []);
@@ -33,7 +34,7 @@ export function GlobalLocationFields() {
   return <div className="location-fields">
     <div className="form-section-heading"><span>Location</span><small>Where should suppliers fulfil this request?</small></div>
     <div className="form-grid">
-      <div className="form-field"><label htmlFor="country">Country</label><select id="country" name="country" required value={country} onChange={(event) => setCountry(event.target.value)}><option value="" disabled>Select a country</option>{countries.map(({ code, name }) => <option value={code} key={code}>{name} ({code})</option>)}</select></div>
+      <div className="form-field"><label htmlFor="country-search">Country</label><input id="country-search" list="country-options" required value={countryQuery} onChange={(event) => { const next = event.target.value; const match = countries.find(({ code, name }) => next === code || next === name || next === `${name} (${code})`); setCountryQuery(next); setCountry(match?.code ?? ""); }} placeholder="Search for a country" autoComplete="country-name" /><input type="hidden" name="country" value={country} /><datalist id="country-options">{countries.map(({ code, name }) => <option value={`${name} (${code})`} key={code} />)}</datalist></div>
       <div className="form-field"><label htmlFor="region">{regionLabel}</label><input id="region" name="region" list="region-options" required maxLength={100} placeholder="Start typing a region" /><datalist id="region-options">{regionOptions.map((region) => <option value={region} key={region} />)}</datalist></div>
     </div>
     <div className="form-grid">
