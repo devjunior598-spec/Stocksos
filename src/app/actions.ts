@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getAccountHome, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
+import { getAccountHome, getAuthenticatedUser, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { moneyToMinorUnits } from "@/lib/money";
 import { isMarketplaceImagePathForBusiness } from "@/lib/image-path";
@@ -491,7 +491,7 @@ export async function adminReviewBusinessAction(formData: FormData) {
   const status = value(formData, "status");
   const note = value(formData, "note");
   if (!z.uuid().safeParse(id).success || !["approved", "rejected", "suspended"].includes(status)) {
-    redirect("/admin?error=invalid");
+    redirect("/admin/accounts?error=invalid");
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("admin_review_business", {
@@ -499,10 +499,31 @@ export async function adminReviewBusinessAction(formData: FormData) {
     p_status: status,
     p_note: note || null,
   });
-  if (error) redirect("/admin?error=review");
+  if (error) redirect("/admin/accounts?error=review");
   revalidatePath("/admin");
+  revalidatePath("/admin/accounts");
   revalidatePath("/suppliers");
-  redirect("/admin?reviewed=1");
+  redirect("/admin/accounts?reviewed=business");
+}
+
+export async function adminReviewAccountAction(formData: FormData) {
+  await requireAdmin();
+  const userId = value(formData, "user_id");
+  const status = value(formData, "status");
+  const note = value(formData, "note");
+  if (!z.uuid().safeParse(userId).success || !["approved", "rejected", "suspended"].includes(status)) {
+    redirect("/admin/accounts?error=invalid");
+  }
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.rpc("admin_review_account", {
+    p_user_id: userId,
+    p_status: status,
+    p_note: note || null,
+  });
+  if (error) redirect("/admin/accounts?error=account");
+  revalidatePath("/admin");
+  revalidatePath("/admin/accounts");
+  redirect("/admin/accounts?reviewed=account");
 }
 
 export async function applyDeliveryPartnerAction(formData: FormData) {
@@ -527,17 +548,18 @@ export async function adminReviewDeliveryPartnerAction(formData: FormData) {
   const partnerId = value(formData, "partner_id");
   const status = value(formData, "status");
   if (!z.uuid().safeParse(partnerId).success || !["approved", "rejected", "suspended"].includes(status)) {
-    redirect("/admin?error=invalid");
+    redirect("/admin/accounts?error=invalid");
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("admin_review_delivery_partner", {
     p_partner_id: partnerId,
     p_status: status,
   });
-  if (error) redirect("/admin?error=review");
+  if (error) redirect("/admin/accounts?error=review");
   revalidatePath("/admin");
+  revalidatePath("/admin/accounts");
   revalidatePath("/delivery");
-  redirect("/admin?reviewed=1");
+  redirect("/admin/accounts?reviewed=delivery");
 }
 
 export async function adminUpdatePlanAction(formData: FormData) {
@@ -548,7 +570,7 @@ export async function adminUpdatePlanAction(formData: FormData) {
   const isActive = value(formData, "is_active") === "yes";
   const monthlyPriceKobo = price === "0" ? 0 : moneyToMinorUnits(price, true);
   if (!/^[a-z0-9-]{2,60}$/.test(planId) || monthlyPriceKobo === null || benefits.some((item) => item.length > 120)) {
-    redirect("/admin?error=plan");
+    redirect("/admin/settings?error=plan");
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("admin_update_subscription_plan", {
@@ -557,23 +579,25 @@ export async function adminUpdatePlanAction(formData: FormData) {
     p_benefits: benefits,
     p_is_active: isActive,
   });
-  if (error) redirect("/admin?error=plan");
+  if (error) redirect("/admin/settings?error=plan");
   revalidatePath("/admin");
+  revalidatePath("/admin/settings");
   revalidatePath("/pricing");
-  redirect("/admin?plan=updated");
+  redirect("/admin/settings?plan=updated");
 }
 
 export async function adminUpdateMarketplaceFeeAction(formData: FormData) {
   await requireAdmin();
   const fee = value(formData, "fee_percent");
-  if (!/^\d{1,2}(?:\.\d{1,2})?$/.test(fee)) redirect("/admin?error=fee");
+  if (!/^\d{1,2}(?:\.\d{1,2})?$/.test(fee)) redirect("/admin/settings?error=fee");
   const feeBps = Math.round(Number(fee) * 100);
-  if (!Number.isSafeInteger(feeBps) || feeBps > 2000) redirect("/admin?error=fee");
+  if (!Number.isSafeInteger(feeBps) || feeBps > 2000) redirect("/admin/settings?error=fee");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("admin_update_marketplace_fee", { p_fee_bps: feeBps });
-  if (error) redirect("/admin?error=fee");
+  if (error) redirect("/admin/settings?error=fee");
   revalidatePath("/admin");
-  redirect("/admin?fee=updated");
+  revalidatePath("/admin/settings");
+  redirect("/admin/settings?fee=updated");
 }
 
 export async function updateSupplierOrderStatusAction(formData: FormData) {
@@ -631,7 +655,9 @@ export async function buyerConfirmReceiptAction(formData: FormData) {
 }
 
 export async function createSupportCaseAction(formData: FormData) {
-  const user = await requireUser();
+  // Pending or rejected applicants must still be able to contact support.
+  const user = await getAuthenticatedUser();
+  if (!user) redirect("/login?next=%2Fcontact");
   const orderId = value(formData, "order_id");
   const parsed = z.object({
     subject: z.string().trim().min(3).max(160),
@@ -647,6 +673,7 @@ export async function createSupportCaseAction(formData: FormData) {
   });
   if (error) redirect("/contact?error=save");
   revalidatePath("/admin");
+  revalidatePath("/admin/support");
   redirect("/contact?sent=1");
 }
 
@@ -715,15 +742,18 @@ export async function updateSupportCaseStatusAction(formData: FormData) {
   await requireSupportStaff();
   const caseId = value(formData, "case_id");
   const status = value(formData, "status");
+  const returnTo = value(formData, "return_to");
+  const destination = returnTo === "/admin/support" ? "/admin/support" : "/support";
   if (!z.uuid().safeParse(caseId).success || !["open", "in_progress", "resolved", "closed"].includes(status)) {
-    redirect("/support?error=invalid");
+    redirect(destination + "?error=invalid");
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("update_support_case_status", { p_case_id: caseId, p_status: status });
-  if (error) redirect("/support?error=update");
+  if (error) redirect(destination + "?error=update");
   revalidatePath("/support");
   revalidatePath("/admin");
-  redirect("/support?updated=1");
+  revalidatePath("/admin/support");
+  redirect(destination + "?updated=1");
 }
 
 export async function markNotificationReadAction(formData: FormData) {

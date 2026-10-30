@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AuthenticatedUser = { id: string; email: string | null };
 export type MarketplaceRole = "buyer" | "supplier";
+export type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
   const supabase = await createSupabaseServerClient();
@@ -29,6 +30,15 @@ export async function getMarketplaceRole(userId: string): Promise<MarketplaceRol
     : null;
 }
 
+export async function getAccountStatus(userId: string): Promise<AccountStatus | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+  const { data } = await supabase.from("profiles").select("account_status").eq("id", userId).maybeSingle();
+  return ["pending", "approved", "rejected", "suspended"].includes(data?.account_status)
+    ? data!.account_status as AccountStatus
+    : null;
+}
+
 export async function getAccountHome(userId: string) {
   if (await getPlatformRole(userId) === "admin") return "/admin";
   return await getMarketplaceRole(userId) === "supplier" ? "/supplier" : "/dashboard";
@@ -43,7 +53,13 @@ export async function requireUser(options: { allowAdmin?: boolean; redirectTo?: 
     const destination = options.redirectTo?.startsWith("/") ? options.redirectTo : "/dashboard";
     redirect(configured ? `/login?next=${encodeURIComponent(destination)}` : "/login?setup=required");
   }
-  if (!options.allowAdmin && await getPlatformRole(user.id) === "admin") redirect("/admin");
+  const platformRole = await getPlatformRole(user.id);
+  if (platformRole !== "admin") {
+    const accountStatus = await getAccountStatus(user.id);
+    // A null status keeps rolling deployments compatible until the migration is applied.
+    if (accountStatus && accountStatus !== "approved") redirect("/account-status");
+  }
+  if (!options.allowAdmin && platformRole === "admin") redirect("/admin");
   return user;
 }
 
