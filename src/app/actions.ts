@@ -102,10 +102,22 @@ export async function saveOnboardingAction(formData: FormData) {
     fullName: z.string().trim().min(2).max(120),
     phone: z.string().trim().max(30).optional(),
     city: z.string().trim().max(100).optional(),
+    country: z.string().trim().length(2).regex(/^[A-Z]{2}$/).optional(),
+    region: z.string().trim().max(100).optional(),
+    postalCode: z.string().trim().max(20).optional(),
+    area: z.string().trim().max(100).optional(),
+    address: z.string().trim().max(240).optional(),
+    defaultDeliveryMethod: z.enum(["pickup", "delivery", "flexible"]),
   }).safeParse({
     fullName: value(formData, "full_name"),
     phone: value(formData, "phone"),
     city: value(formData, "city"),
+    country: value(formData, "country").toUpperCase(),
+    region: value(formData, "region"),
+    postalCode: value(formData, "postal_code"),
+    area: value(formData, "area"),
+    address: value(formData, "address"),
+    defaultDeliveryMethod: value(formData, "default_delivery_method"),
   });
   if (!parsed.success) redirect("/onboarding?error=invalid");
   const supabase = await createSupabaseServerClient();
@@ -113,6 +125,12 @@ export async function saveOnboardingAction(formData: FormData) {
     full_name: parsed.data.fullName,
     phone: parsed.data.phone || null,
     home_city: parsed.data.city || null,
+    home_country: parsed.data.country || null,
+    home_region: parsed.data.region || null,
+    home_postal_code: parsed.data.postalCode || null,
+    home_area: parsed.data.area || null,
+    home_address: parsed.data.address || null,
+    default_delivery_method: parsed.data.defaultDeliveryMethod,
     updated_at: new Date().toISOString(),
   }).eq("id", user.id);
   if (error) redirect("/onboarding?error=save");

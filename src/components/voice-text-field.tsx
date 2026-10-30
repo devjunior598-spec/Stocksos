@@ -40,7 +40,7 @@ function recognitionErrorMessage(code: string | undefined) {
   }
 }
 
-export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLength, required = false, fallbackAvailable = false }: {
+export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLength, required = false, fallbackAvailable = false, onValueChange }: {
   id: string;
   name: string;
   defaultValue?: string;
@@ -48,6 +48,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
   maxLength?: number;
   required?: boolean;
   fallbackAvailable?: boolean;
+  onValueChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(defaultValue);
   const [listening, setListening] = useState(false);
@@ -101,6 +102,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     const clean = transcript.trim().slice(0, maxLength ?? 500);
     if (!clean) return;
     setValue(clean);
+    onValueChange?.(clean);
     void askStockSOS(clean);
   }
 
@@ -223,7 +225,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     }
   }
 
-  return <div className="voice-field"><div className="voice-field-row"><input id={id} name={name} value={value} onChange={(event) => setValue(event.target.value)} placeholder={placeholder} maxLength={maxLength} required={required} /><button className="button button-secondary button-small voice-button" type="button" onClick={toggleVoice} disabled={transcribing} aria-pressed={listening} aria-label={listening ? "Stop voice input" : "Start voice input"}>{transcribing ? <LoaderCircle size={15} className="spin" /> : listening ? <MicOff size={15} /> : <Mic size={15} />}{transcribing ? "Transcribing" : listening ? "Stop" : "Speak"}</button></div>
+  return <div className="voice-field"><div className="voice-field-row"><input id={id} name={name} value={value} onChange={(event) => { setValue(event.target.value); onValueChange?.(event.target.value); }} placeholder={placeholder} maxLength={maxLength} required={required} /><button className="button button-secondary button-small voice-button" type="button" onClick={toggleVoice} disabled={transcribing} aria-pressed={listening} aria-label={listening ? "Stop voice input" : "Start voice input"}>{transcribing ? <LoaderCircle size={15} className="spin" /> : listening ? <MicOff size={15} /> : <Mic size={15} />}{transcribing ? "Transcribing" : listening ? "Stop" : "Speak"}</button></div>
     <span className={`form-hint voice-status${listening ? " voice-status-listening" : ""}`} role={error ? "alert" : "status"}>{error || (transcribing ? "Securely transcribing your short recording…" : listening ? "Listening… speak clearly, then tap Stop when finished." : "Tap Speak to start. Your words will appear here for review before you submit.")}</span>
     <label className="voice-consent"><input type="checkbox" checked={audioConsent} onChange={(event) => setAudioConsent(event.target.checked)} /> If device speech fails, allow a short recording to be sent securely to StockSOS for transcription. Audio is processed for text and not stored by StockSOS.</label>
     {fallbackAvailable ? <label className="voice-consent"><input type="checkbox" checked={audioConsent} onChange={(event) => setAudioConsent(event.target.checked)} /> If device speech fails, allow a short recording to be sent securely to our transcription provider. StockSOS does not store the recording.</label> : <span className="form-hint">Device speech is tried first. Secure audio backup can be enabled by configuring the server transcription key.</span>}
