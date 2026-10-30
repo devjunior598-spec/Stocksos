@@ -10,6 +10,16 @@ import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ enquiry?: string; error?: string; updated?: string; saved?: string }> };
 
+export async function generateMetadata({ params }: Pick<Props, "params">): Promise<import("next").Metadata> {
+  const { slug } = await params;
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return {};
+  const { data } = await supabase.from("businesses").select("name,city,description").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
+  if (!data) return {};
+  const description = data.description || `Browse verified inventory from ${data.name} in ${data.city}.`;
+  return { title: `${data.name} supplier storefront`, description, alternates: { canonical: `/business/${slug}` }, openGraph: { title: `${data.name} · StockSOS`, description, type: "website" } };
+}
+
 export default async function BusinessProfilePage({ params, searchParams }: Props) {
   const [{ slug }, query, user] = await Promise.all([params, searchParams, getAuthenticatedUser()]);
   const supabase = await createSupabaseServerClient();
@@ -54,7 +64,7 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
           {products?.length ? <div className="catalog-grid">{products.map((product) => {
             const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
             const imageUrl = getMarketplaceImageUrl(product.image_path);
-            return <article className="product-card" key={product.id}><div className="product-placeholder">{imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 33vw" className="product-image" /> : <PackageSearch size={25} />}</div><div className="product-detail"><span className="pill">{product.condition}</span><h3>{product.name}</h3><p>{[product.brand, `${stock?.quantity_available ?? 0} available`].filter(Boolean).join(" · ")}</p>{product.specifications ? <p className="product-specs">{product.specifications}</p> : null}<div className="product-price">{formatNaira(stock?.unit_price_kobo)}</div></div></article>;
+            return <article className="product-card" key={product.id}><div className="product-placeholder">{imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 33vw" className="product-image" /> : <PackageSearch size={25} />}</div><div className="product-detail"><span className="pill">{product.condition}</span><h3>{product.name}</h3><p>{[product.brand, `${stock?.quantity_available ?? 0} available`].filter(Boolean).join(" · ")}</p>{product.specifications ? <p className="product-specs">{product.specifications}</p> : null}<div className="product-price">{formatNaira(stock?.unit_price_kobo)}</div><Link className="text-link" href={`/product/${product.id}`}>View product <ArrowRight size={14} /></Link></div></article>;
           })}</div> : <div className="empty-state"><div className="empty-state-icon"><Boxes size={21} /></div><h3>No public stock listed yet</h3><p>This approved business has not published available inventory. You can still send a product enquiry below.</p></div>}
         </div>
         <aside>

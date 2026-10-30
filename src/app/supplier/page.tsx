@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, BadgeCheck, Bell, Boxes, Building2, PackageCheck, PackagePlus, PackageSearch, ShieldCheck, Truck } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bell, Boxes, Building2, PackageCheck, PackagePlus, PackageSearch, ShieldCheck, Truck, Globe2 } from "lucide-react";
 import { createSupplierProductAction, deleteSupplierProductAction, markNotificationReadAction, submitQuotationAction, updateSupplierOrderStatusAction, updateSupplierProductAction } from "@/app/actions";
 import { requireUser } from "@/lib/auth";
 import { getCategories, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
@@ -146,7 +146,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
                       <button className="button button-primary form-submit" type="submit"><PackagePlus size={15} /> Add product</button>
                     </form> : <p className="muted small">You need an owner, admin or inventory manager role to add or change listings.</p>}
                   </section>
-                  <section className="panel quick-links"><h2>Supplier tools</h2>{businesses.find((business) => business.visibility === "public") ? <Link href={"/business/" + businesses.find((business) => business.visibility === "public")?.slug}><Boxes size={16} /> Public business profile <ArrowRight size={14} /></Link> : null}<Link href="/pricing"><BadgeCheck size={16} /> Plans and pricing <ArrowRight size={14} /></Link><Link href="/contact"><Truck size={16} /> Supplier support <ArrowRight size={14} /></Link></section>
+                  <section className="panel quick-links"><h2>Supplier tools</h2>{businesses.find((business) => business.visibility === "public") ? <Link href={"/business/" + businesses.find((business) => business.visibility === "public")?.slug}><Boxes size={16} /> Public business profile <ArrowRight size={14} /></Link> : null}<Link href="/supplier/reach"><Globe2 size={16} /> StockSOS Reach <ArrowRight size={14} /></Link><Link href="/pricing"><BadgeCheck size={16} /> Plans and pricing <ArrowRight size={14} /></Link><Link href="/contact"><Truck size={16} /> Supplier support <ArrowRight size={14} /></Link></section>
                 </aside>
               </div>
             )}

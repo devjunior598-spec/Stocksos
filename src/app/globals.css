@@ -533,6 +533,38 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 .support-case-message { margin: 15px 0; color: #52617b; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .support-case-meta { align-items: center; padding-top: 13px; border-top: 1px solid #edf0f5; }
 .support-case-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.product-public-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); gap: 20px; align-items: start; }
+.product-public-card { overflow: hidden; padding: 0; }
+.product-public-image { position: relative; height: 360px; display: grid; place-items: center; color: #9aaf9f; background: #f1f5ed; }
+.product-public-copy { padding: 24px; }
+.product-public-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.product-public-copy h2 { margin: 16px 0 6px; font-size: 28px; }
+.product-description { margin: 18px 0; color: #526963; line-height: 1.7; white-space: pre-line; }
+.product-public-price { margin-top: 20px; color: var(--navy); font-size: 28px; font-weight: 800; letter-spacing: -.04em; }
+.product-public-price span { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0; }
+.stock-available { margin: 6px 0 0; color: var(--green); font-size: 12px; font-weight: 700; }
+.product-public-aside { display: grid; gap: 14px; }
+.product-public-aside .panel h3 { margin: 11px 0 6px; }
+.product-public-aside .form-submit { display: flex; width: 100%; margin-top: 10px; }
+.reach-callout { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; padding: 15px 16px; color: #345d4a; background: #edf6ed; border: 1px solid #d3e7d4; border-radius: 14px; }
+.reach-callout-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; color: var(--green); background: #dcefdc; border-radius: 50%; }
+.reach-callout strong { display: block; color: #234c3b; font-size: 13px; }
+.reach-callout p { margin: 3px 0 0; color: #5b7568; font-size: 11px; }
+.reach-columns { grid-template-columns: 1.2fr .8fr; }
+.reach-channel-list { display: grid; gap: 10px; }
+.reach-channel { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #e5ebe2; border-radius: 12px; }
+.reach-channel-icon { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; color: var(--blue); background: var(--blue-pale); border-radius: 9px; }
+.reach-channel > div { min-width: 0; flex: 1; }
+.reach-channel strong { display: block; color: var(--navy); font-size: 12px; }
+.reach-channel p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.reach-product-list { display: grid; gap: 0; }
+.reach-product-row, .reach-storefront { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid #edf0f5; }
+.reach-product-row:last-child, .reach-storefront:last-child { border-bottom: 0; }
+.reach-product-row > span { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--blue); }
+.reach-product-row strong { overflow: hidden; color: var(--navy); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.reach-storefront strong, .reach-storefront span { display: block; }
+.reach-storefront strong { color: var(--navy); font-size: 12px; }
+.reach-storefront span { margin-top: 2px; color: var(--muted); font-size: 10px; }
 .mobile-bottom-nav { display: none; }
 @media (max-width: 700px) {
   body { padding-bottom: 76px; }
@@ -551,6 +583,12 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
   .business-profile-heading h1 { font-size: 36px; }
   .admin-action-row { align-items: stretch; }
   .admin-action-row input { flex-basis: 100%; }
+  .product-public-grid, .reach-columns { grid-template-columns: 1fr; }
+  .product-public-image { height: 260px; }
+  .product-public-copy { padding: 17px; }
+  .product-public-copy h2 { font-size: 24px; }
+  .reach-channel { flex-wrap: wrap; }
+  .reach-channel .pill { margin-left: 40px; }
 }
 .inventory-edit { border-bottom: 1px solid #edf0f5; }
 .inventory-edit:last-child { border-bottom: 0; }

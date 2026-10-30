@@ -6,7 +6,7 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://stocksos.ng"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://stocksos-7k4m2p9x.vercel.app"),
   title: {
     default: "StockSOS — Find stock. Rescue your business.",
     template: "%s · StockSOS",

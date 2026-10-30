@@ -54,7 +54,7 @@ export default async function FindStockPage({ searchParams }: Props) {
               <p>{[product.brand, business?.city].filter(Boolean).join(" · ") || "Approved supplier listing"}</p>
               <div className="product-price">{stock ? formatNaira(stock.unit_price_kobo) : "Price on request"}</div>
               <p>{stock ? stock.quantity_available + " available" : "Check with supplier"}</p>
-              <Link className="text-link" href={business?.slug ? "/business/" + business.slug : "/sos"}>View supplier <ArrowRight size={14} /></Link>
+              <Link className="text-link" href={`/product/${product.id}`}>View product <ArrowRight size={14} /></Link>
             </div>
           </article>;
         })}</div> : <div className="empty-state"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>{search ? "No matching listings yet" : "Listings will appear here"}</h3><p>StockSOS doesn’t publish sample inventory. If your item is not listed, request it and matched suppliers can respond with an offer.</p><Link className="button button-primary" href="/sos">Request this stock <ArrowRight size={15} /></Link></div>}
