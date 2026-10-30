@@ -19,20 +19,21 @@ export async function getPlatformRole(userId: string): Promise<string | null> {
   return typeof data?.platform_role === "string" ? data.platform_role : null;
 }
 
-export async function requireUser(options: { allowAdmin?: boolean } = {}) {
+export async function requireUser(options: { allowAdmin?: boolean; redirectTo?: string } = {}) {
   const user = await getAuthenticatedUser();
   if (!user) {
     const configured = Boolean(
       process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     );
-    redirect(configured ? "/login?next=/dashboard" : "/login?setup=required");
+    const destination = options.redirectTo?.startsWith("/") ? options.redirectTo : "/dashboard";
+    redirect(configured ? `/login?next=${encodeURIComponent(destination)}` : "/login?setup=required");
   }
   if (!options.allowAdmin && await getPlatformRole(user.id) === "admin") redirect("/admin");
   return user;
 }
 
 export async function requireAdmin() {
-  const user = await requireUser({ allowAdmin: true });
+  const user = await requireUser({ allowAdmin: true, redirectTo: "/admin" });
   if (await getPlatformRole(user.id) !== "admin") {
     const { notFound } = await import("next/navigation");
     notFound();
@@ -41,7 +42,7 @@ export async function requireAdmin() {
 }
 
 export async function requireSupportStaff() {
-  const user = await requireUser({ allowAdmin: true });
+  const user = await requireUser({ allowAdmin: true, redirectTo: "/support" });
   const role = await getPlatformRole(user.id);
   if (role !== "support" && role !== "admin") {
     const { notFound } = await import("next/navigation");
