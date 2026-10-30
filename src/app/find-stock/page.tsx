@@ -1,18 +1,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, PackageSearch } from "lucide-react";
-import { getCategories, getProductsResult, formatNaira, getMarketplaceImageUrl } from "@/lib/data";
+import { getCategories, getProductsResult, formatMoney, getMarketplaceImageUrl } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { z } from "zod";
 import { VoiceTextField } from "@/components/voice-text-field";
 
-type Props = { searchParams: Promise<{ q?: string; category?: string; city?: string; min?: string; max?: string; interpreted?: string }> };
+type Props = { searchParams: Promise<{ q?: string; category?: string; country?: string; city?: string; min?: string; max?: string; interpreted?: string }> };
 
 export default async function FindStockPage({ searchParams }: Props) {
   const params = await searchParams;
   const search = params.q?.trim().slice(0, 80) ?? "";
   const categoryId = z.uuid().safeParse(params.category).success ? params.category : undefined;
   const city = params.city?.trim().slice(0, 60) ?? "";
+  const country = /^[A-Za-z]{2}$/.test(params.country ?? "") ? params.country!.toUpperCase() : "";
   const parsePrice = (value?: string) => {
     if (!value || !/^\d{1,10}(?:\.\d{1,2})?$/.test(value)) return undefined;
     const amount = Math.round(Number(value) * 100);
@@ -21,7 +22,7 @@ export default async function FindStockPage({ searchParams }: Props) {
   const min = parsePrice(params.min);
   const max = parsePrice(params.max);
   const [productResult, categories] = await Promise.all([
-    getProductsResult(search, { categoryId, city, minPriceKobo: min, maxPriceKobo: max }),
+    getProductsResult(search, { categoryId, country, city, minPriceKobo: min, maxPriceKobo: max }),
     getCategories(),
   ]);
   const { products, error: productError } = productResult;
@@ -32,14 +33,15 @@ export default async function FindStockPage({ searchParams }: Props) {
       </div></section>
       <section className="section-tight"><div className="page-container">
         <SupabaseSetupNotice />
-        {params.interpreted === "1" ? <div className="notice" role="status"><div><strong>Your spoken search has been applied.</strong><p>Review or change the filters below. {city ? `Searching in ${city}.` : "No city was provided or saved; results include all cities."} {categoryId ? "A matching category was selected." : "Category was uncertain, so all categories are included."} Prices are per unit in NGN.</p></div></div> : null}
+        {params.interpreted === "1" ? <div className="notice" role="status"><div><strong>Your spoken search has been applied.</strong><p>Review or change the filters below. {city ? `Searching in ${city}.` : "No city was provided or saved; results include all cities."} {categoryId ? "A matching category was selected." : "Category was uncertain, so all categories are included."} Launch prices are per unit in USD.</p></div></div> : null}
         {productError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Stock search could not be completed.</strong><p>{productError}</p></div></div> : null}
         <form className="filter-row" action="/find-stock">
           <input type="hidden" name="q" value={search} />
           <div className="form-field"><label htmlFor="category">Category</label><select id="category" name="category" defaultValue={categoryId ?? ""}><option value="">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>
+          <div className="form-field"><label htmlFor="country">Country code</label><input id="country" name="country" defaultValue={country} placeholder="US" minLength={2} maxLength={2} autoCapitalize="characters" /></div>
           <div className="form-field"><label htmlFor="city">City</label><input id="city" name="city" defaultValue={city} placeholder="Enter a city" /></div>
-          <div className="form-field"><label htmlFor="min">Minimum ₦</label><input id="min" name="min" type="number" min="0" step="0.01" defaultValue={params.min ?? ""} /></div>
-          <div className="form-field"><label htmlFor="max">Maximum ₦</label><input id="max" name="max" type="number" min="0" step="0.01" defaultValue={params.max ?? ""} /></div>
+          <div className="form-field"><label htmlFor="min">Minimum USD</label><input id="min" name="min" type="number" min="0" step="0.01" defaultValue={params.min ?? ""} /></div>
+          <div className="form-field"><label htmlFor="max">Maximum USD</label><input id="max" name="max" type="number" min="0" step="0.01" defaultValue={params.max ?? ""} /></div>
           <button className="button button-secondary" type="submit">Apply filters</button>
         </form>
         {products.length ? <div className="catalog-grid">{products.map((product) => {
@@ -51,8 +53,8 @@ export default async function FindStockPage({ searchParams }: Props) {
             <div className="product-detail">
               <span className="pill">{product.condition}</span>
               <h3>{product.name}</h3>
-              <p>{[product.brand, business?.city].filter(Boolean).join(" · ") || "Approved supplier listing"}</p>
-              <div className="product-price">{stock ? formatNaira(stock.unit_price_kobo) : "Price on request"}</div>
+              <p>{[product.brand, business?.city, business?.country].filter(Boolean).join(" · ") || "Approved supplier listing"}</p>
+              <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}</div>
               <p>{stock ? stock.quantity_available + " available" : "Check with supplier"}</p>
               <Link className="text-link" href={`/product/${product.id}`}>View product <ArrowRight size={14} /></Link>
             </div>

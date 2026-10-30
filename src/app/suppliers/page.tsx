@@ -15,7 +15,7 @@ export default async function SuppliersPage() {
         {businesses.length ? <div className="card-grid">{businesses.map((business) => <article className="feature-card" key={business.id}>
           <span className="feature-icon"><Building2 size={20} /></span><span className="pill pill-green"><BadgeCheck size={12} /> Approved</span>
           <h3 style={{ marginTop: 12 }}>{business.name}</h3>
-          <p><MapPin size={13} /> {[business.area, business.city].filter(Boolean).join(", ")}</p>
+          <p><MapPin size={13} /> {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")}</p>
           {business.description ? <p>{business.description}</p> : null}
           <Link className="text-link" href={"/business/" + business.slug}>View business <ArrowRight size={14} /></Link>
         </article>)}</div> : <div className="empty-state"><div className="empty-state-icon"><Building2 size={22} /></div><h3>Supplier profiles will appear after approval</h3><p>Only real businesses that pass the platform’s review are shown here.</p><Link className="button button-primary" href="/become-supplier">Apply as a supplier <ArrowRight size={14} /></Link></div>}

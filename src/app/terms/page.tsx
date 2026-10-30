@@ -4,7 +4,7 @@ export default function TermsPage() {
   return <InfoPage
     eyebrow="Legal"
     title="Terms of service"
-    intro="These launch terms explain the basic roles and responsibilities in the StockSOS marketplace. They require review by qualified Nigerian counsel before public commercial launch."
+    intro="These launch terms explain the basic roles and responsibilities in the StockSOS marketplace. They require review by qualified counsel in each jurisdiction where StockSOS operates before public commercial launch."
     sections={[
       { heading: "Marketplace role", paragraphs: ["StockSOS helps buyers discover participating suppliers and compare quotations. The supplier is responsible for confirming the accuracy, availability, condition and lawful sale of listed goods. A buyer chooses whether to accept an offer."] },
       { heading: "Accounts and business information", paragraphs: ["Users must provide accurate account information and protect their login credentials. Business listings and verification documents must relate to the applying business. StockSOS may restrict marketplace access while a verification or safety issue is reviewed."] },

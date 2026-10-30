@@ -1,6 +1,6 @@
 # StockSOS
 
-StockSOS is a Nigeria-focused business inventory sourcing marketplace. Buyers can discover listed stock or send an SOS request; approved suppliers can respond with quotations and manage resulting orders. The product is built with Next.js App Router, TypeScript, Supabase PostgreSQL/Auth/Storage, and Paystack server-side APIs.
+StockSOS is a global business inventory sourcing marketplace with U.S.-style launch defaults. Buyers can discover listed stock or send an SOS request; approved suppliers can respond with quotations and manage resulting orders. The product is built with Next.js App Router, TypeScript, and Supabase PostgreSQL/Auth/Storage.
 
 ## Repository audit and implementation checklist
 
@@ -47,7 +47,7 @@ Open `http://localhost:3000`. With no Supabase variables, public pages render re
    supabase db push
    ```
 
-   The migrations are `supabase/migrations/20261028052319_core_marketplace.sql`, `supabase/migrations/20261028103317_fix_sos_match_rls.sql`, `supabase/migrations/20261028124500_phase3_order_operations.sql`, and `supabase/migrations/20261028130000_phase4_smart_matching.sql`. Apply them to staging first and verify RLS with separate role accounts.
+   Apply every migration in `supabase/migrations` to staging first and verify RLS with separate buyer, supplier, and administrator accounts. The global marketplace migration introduces authoritative buyer/supplier roles, country-aware matching, and USD launch pricing.
 4. To bootstrap the first administrator, use the Supabase SQL editor as the project owner and set the role for a known profile UUID:
 
    ```sql
@@ -60,11 +60,7 @@ Open `http://localhost:3000`. With no Supabase variables, public pages render re
 
 ## Payments
 
-Checkout is disabled by default. Paystack keys remain server-only. Before enabling payments, confirm the business's merchant settlement, supplier settlement, marketplace, refund, and applicable Nigerian regulatory arrangements with Paystack and qualified counsel. This first transaction flow charges the platform merchant account; it does **not** split funds or pay suppliers, and must not be treated as escrow.
-
-After those arrangements are approved, configure `PAYSTACK_SECRET_KEY`, `SUPABASE_SECRET_KEY`, and `PAYMENTS_ENABLED=true` in the server environment. Configure the Paystack webhook URL as `https://YOUR_DOMAIN/api/payments/webhook` and subscribe to `charge.success`. The server checks the Paystack HMAC signature, calls Paystack's verification endpoint, compares amount/currency/reference, and confirms the order through an idempotent database function. The browser callback alone never marks an order paid.
-
-Use Paystack's test key in a non-production project first. A payment remains unavailable when any required secret is missing or `PAYMENTS_ENABLED` is not exactly `true`.
+Checkout is disabled. The global launch uses USD display and storage, but no payment provider or supplier-settlement flow is enabled. Select a provider that supports every intended market, complete legal and settlement review, and test in an isolated environment before adding checkout. StockSOS must not describe a simple platform charge as escrow or a guaranteed supplier payout.
 
 ## Notifications and storage
 
@@ -72,7 +68,7 @@ SOS creation writes in-app notifications and deduplicated email jobs to `notific
 
 The migration creates a public marketplace image bucket and private verification-document bucket. Suppliers can upload product images. Private verification document upload/review is not yet available in the admin workflow.
 
-Vercel Hobby invokes `/api/cron/reconcile-payments` once daily. Set a strong `CRON_SECRET` in Vercel and the deployment runtime. The route verifies stale Paystack checkouts with Paystack and expires unpaid orders that have no active checkout, restoring held stock. Upgrade to a Vercel plan with frequent Cron Jobs, or configure an equivalent authenticated scheduler on another host, before enabling live payments.
+Vercel Hobby invokes `/api/cron/reconcile-payments` once daily. Keep the route disabled until a global payment provider is selected and its reconciliation adapter has been reviewed. Upgrade to a plan with suitable Cron frequency, or configure an equivalent authenticated scheduler, before enabling live payments.
 
 ## Deployment
 
@@ -87,7 +83,7 @@ npm run lint
 npm run build
 ```
 
-Read [docs/TESTING.md](docs/TESTING.md) for coverage and staging results. The buyer/supplier SOS workflow, inventory photo storage, authorization checks, and order creation were exercised against isolated staging data. Phase 3 payment-provider, dispute, review, and revenue code is implemented but requires a fresh staging migration and Paystack test credentials before it can be claimed as integration-tested.
+Read [docs/TESTING.md](docs/TESTING.md) for coverage and staging results. The global role/location migration and new buyer/supplier account isolation must be applied to an isolated Supabase environment before the updated end-to-end workflow can be claimed as integration-tested. Live payments remain out of scope.
 
 ## Production gaps
 
@@ -102,6 +98,6 @@ This is a substantial foundation, not a claim that every phase in the brief is c
 - Configurable plan prices/benefits are displayed and editable by admins. Subscription checkout, renewal, entitlements, and backend plan restrictions are not implemented.
 - Refund and dispute requests, audit records, verified buyer reviews, revenue reporting, and server-authorized PDF receipt downloads are implemented. Admin refund approval, provider refund execution, and reconciliation jobs still require staging/provider verification.
 - Account deletion requests, notification preferences, email/WhatsApp/push dispatch, live database subscriptions, and StockSOS AI features are not implemented.
-- The core schema and public-key connection are set up in the production Stocksos Supabase project. The temporary staging project used for the marketplace workflow test has been deleted. The server-only Supabase secret, Paystack credential, and deployment are not configured in this workspace. No production payment or fulfilled order was simulated.
+- The core schema and public-key connection are set up in the production Stocksos Supabase project. The global-role migration has not been applied to production. No production payment or fulfilled order was simulated.
 
-Before launch, complete live security/RLS review, Nigerian data/privacy and marketplace legal review, staging tests with multiple roles, Paystack settlement verification, email worker operation, error monitoring, and support/refund/dispute procedures.
+Before launch, complete live security/RLS review, multi-jurisdiction privacy and marketplace legal review, staging tests with multiple roles, global payment and settlement review, email worker operation, error monitoring, and support/refund/dispute procedures.

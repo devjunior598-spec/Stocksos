@@ -12,7 +12,7 @@ export type PublicProduct = {
   business_id: string;
   category_id: string;
   inventory: { quantity_available: number; unit_price_kobo: number; currency: string } | null;
-  businesses: { name: string; city: string; slug: string } | null;
+  businesses: { name: string; city: string; region: string | null; country: string; slug: string } | null;
 };
 
 export type ProductQueryResult = { products: PublicProduct[]; error: string | null };
@@ -26,7 +26,7 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getProducts(
   search?: string,
-  filters?: { categoryId?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
+  filters?: { categoryId?: string; country?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
 ): Promise<PublicProduct[]> {
   const result = await getProductsResult(search, filters);
   return result.products;
@@ -34,12 +34,12 @@ export async function getProducts(
 
 export async function getProductsResult(
   search?: string,
-  filters?: { categoryId?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
+  filters?: { categoryId?: string; country?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
 ): Promise<ProductQueryResult> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { products: [], error: "Supabase is not configured for this deployment." };
   let query = supabase.from("products")
-    .select("id,name,brand,condition,specifications,image_path,business_id,category_id,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,slug)")
+    .select("id,name,brand,condition,specifications,image_path,business_id,category_id,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,region,country,slug)")
     .eq("is_active", true)
     .eq("visibility", "public")
     .gt("inventory.quantity_available", 0)
@@ -49,6 +49,8 @@ export async function getProductsResult(
   const safeSearch = search?.trim().replace(/[^a-z0-9\s-]/gi, "").slice(0, 80);
   if (safeSearch) query = query.or("name.ilike.%" + safeSearch + "%,brand.ilike.%" + safeSearch + "%,specifications.ilike.%" + safeSearch + "%");
   if (filters?.categoryId) query = query.eq("category_id", filters.categoryId);
+  const safeCountry = filters?.country?.trim().toUpperCase();
+  if (safeCountry && /^[A-Z]{2}$/.test(safeCountry)) query = query.eq("businesses.country", safeCountry);
   const safeCity = filters?.city?.trim().replace(/[^a-z\s-]/gi, "").slice(0, 60);
   if (safeCity) query = query.ilike("businesses.city", "%" + safeCity + "%");
   if (typeof filters?.minPriceKobo === "number") query = query.gte("inventory.unit_price_kobo", filters.minPriceKobo);
@@ -72,7 +74,7 @@ export async function getPublicBusinesses() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   const { data } = await supabase.from("businesses")
-    .select("id,name,slug,city,area,description,primary_category_id")
+    .select("id,name,slug,country,region,city,area,description,primary_category_id")
     .eq("verification_status", "approved")
     .eq("visibility", "public")
     .order("name")
@@ -80,11 +82,12 @@ export async function getPublicBusinesses() {
   return data ?? [];
 }
 
-export function formatNaira(kobo: number | string | null | undefined) {
+export function formatMoney(kobo: number | string | null | undefined, currency = "USD") {
   const value = Number(kobo ?? 0) / 100;
-  return new Intl.NumberFormat("en-NG", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }

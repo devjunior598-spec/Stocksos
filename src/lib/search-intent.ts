@@ -17,7 +17,7 @@ export function parseSearchIntent(input: string, categories: Category[], savedCi
   let product = input.trim();
   let min: number | undefined;
   let max: number | undefined;
-  const amount = "(?:₦\\s*|NGN\\s*)?(\\d[\\d,]*(?:\\.\\d{1,2})?)\\s*(k|thousand)?(?:\\s*(?:naira|NGN))?";
+  const amount = "(?:\\$\\s*|USD\\s*)?(\\d[\\d,]*(?:\\.\\d{1,2})?)\\s*(k|thousand)?(?:\\s*(?:dollars?|USD))?";
   const number = (value: string, suffix?: string) => Number(value.replaceAll(",", "")) * (suffix ? 1000 : 1);
   const range = new RegExp(`\\bbetween\\s+${amount}\\s+and\\s+${amount}`, "i");
   const match = product.match(range);
@@ -33,8 +33,8 @@ export function parseSearchIntent(input: string, categories: Category[], savedCi
   if ((min !== undefined && min > 1e10) || (max !== undefined && max > 1e10) || (min !== undefined && max !== undefined && min > max)) {
     throw new Error("Please give a price range with the minimum below the maximum.");
   }
-  if (/[$€£]|\b(?:USD|EUR|GBP|dollars?|euros?|pounds?)\b/i.test(input)) {
-    throw new Error("These listings are priced in NGN. Please specify a naira budget, or search without a price range.");
+  if (/[€£₦]|\b(?:EUR|GBP|NGN|euros?|pounds?|naira)\b/i.test(input)) {
+    throw new Error("StockSOS launch listings are priced in USD. Enter a dollar budget or search without a price range.");
   }
   const location = product.match(/\b(?:in|near|around)\s+([\p{L}][\p{L}\s.'-]*?)\s*[.!?]*$/u);
   const city = location ? location[1].trim().replace(/[.!?]+$/, "") : savedCity.trim();

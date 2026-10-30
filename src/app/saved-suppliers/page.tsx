@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Bookmark, Building2, MapPin } from "lucide-react";
 import { saveSupplierAction } from "@/app/actions";
-import { requireUser } from "@/lib/auth";
+import { requireBuyer } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function SavedSuppliersPage() {
-  const user = await requireUser();
+  const user = await requireBuyer();
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase!.from("saved_suppliers")
     .select("business_id,created_at,businesses!inner(name,slug,city,area,description,verification_status,visibility)")

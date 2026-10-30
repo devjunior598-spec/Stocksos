@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, CircleAlert, Zap } from "lucide-react";
 import { createSOSAction } from "@/app/actions";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
 import { getCategories } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { SOSAIRequest } from "@/components/sos-ai-request";
@@ -11,6 +12,7 @@ type Props = { searchParams: Promise<{ error?: string }> };
 export default async function SOSPage({ searchParams }: Props) {
   const params = await searchParams;
   const user = await getAuthenticatedUser();
+  if (user && await getMarketplaceRole(user.id) === "supplier") redirect("/supplier");
   const categories = await getCategories();
   const supabase = user ? await (await import("@/lib/supabase/server")).createSupabaseServerClient() : null;
   const profileResult = supabase && user
@@ -20,7 +22,7 @@ export default async function SOSPage({ searchParams }: Props) {
     ? (await supabase.from("profiles").select("home_city").eq("id", user.id).maybeSingle()).data
     : profileResult.data;
   const location = {
-    country: (profile as { home_country?: string } | null)?.home_country ?? "NG",
+    country: (profile as { home_country?: string } | null)?.home_country ?? "US",
     region: (profile as { home_region?: string } | null)?.home_region ?? "",
     city: profile?.home_city ?? "",
     postalCode: (profile as { home_postal_code?: string } | null)?.home_postal_code ?? "",

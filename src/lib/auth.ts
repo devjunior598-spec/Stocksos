@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AuthenticatedUser = { id: string; email: string | null };
+export type MarketplaceRole = "buyer" | "supplier";
 
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
   const supabase = await createSupabaseServerClient();
@@ -17,6 +18,20 @@ export async function getPlatformRole(userId: string): Promise<string | null> {
   if (!supabase) return null;
   const { data } = await supabase.from("profiles").select("platform_role").eq("id", userId).maybeSingle();
   return typeof data?.platform_role === "string" ? data.platform_role : null;
+}
+
+export async function getMarketplaceRole(userId: string): Promise<MarketplaceRole | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+  const { data } = await supabase.from("profiles").select("marketplace_role").eq("id", userId).maybeSingle();
+  return data?.marketplace_role === "buyer" || data?.marketplace_role === "supplier"
+    ? data.marketplace_role
+    : null;
+}
+
+export async function getAccountHome(userId: string) {
+  if (await getPlatformRole(userId) === "admin") return "/admin";
+  return await getMarketplaceRole(userId) === "supplier" ? "/supplier" : "/dashboard";
 }
 
 export async function requireUser(options: { allowAdmin?: boolean; redirectTo?: string } = {}) {
@@ -38,6 +53,18 @@ export async function requireAdmin() {
     const { notFound } = await import("next/navigation");
     notFound();
   }
+  return user;
+}
+
+export async function requireBuyer() {
+  const user = await requireUser({ redirectTo: "/dashboard" });
+  if (await getMarketplaceRole(user.id) !== "buyer") redirect("/supplier");
+  return user;
+}
+
+export async function requireSupplier() {
+  const user = await requireUser({ redirectTo: "/supplier" });
+  if (await getMarketplaceRole(user.id) !== "supplier") redirect("/dashboard");
   return user;
 }
 

@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return <InfoPage
     eyebrow="Legal"
     title="Privacy policy"
-    intro="StockSOS uses account and business information to operate sourcing, quotations and order workflows. This launch summary needs a formal review against the Nigeria Data Protection Act and applicable rules before production."
+    intro="StockSOS uses account and business information to operate sourcing, quotations and order workflows. This launch summary requires formal review against the privacy laws that apply in every country where the service operates."
     sections={[
       { heading: "Information we use", paragraphs: ["Depending on how you use StockSOS, the platform may process account details, contact information, business profiles, inventory, SOS requests, quotations, order records, support requests and verification documents."] },
       { heading: "How information is used", paragraphs: ["Data is used to authenticate accounts, match requests with suppliers, support orders, protect the marketplace, send activity notices and meet legal or operational requirements. Buyer contact details are not included in the supplier match payload."] },

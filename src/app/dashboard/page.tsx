@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, Bell, Boxes, CircleAlert, Clock3, MapPin, PackageCheck, PackageSearch, Zap } from "lucide-react";
 import { acceptQuotationAction, cancelSOSAction, markNotificationReadAction } from "@/app/actions";
-import { requireUser } from "@/lib/auth";
+import { requireBuyer } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { formatNaira } from "@/lib/data";
+import { formatMoney } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
-import { quoteTotalKobo } from "@/lib/money";
+import { quoteTotalMinorUnits } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -17,16 +17,16 @@ function statusClass(status: string) {
 }
 
 function dateLabel(value: string) {
-  return new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(value));
 }
 
 export default async function BuyerDashboardPage() {
-  const user = await requireUser();
+  const user = await requireBuyer();
   const supabase = await createSupabaseServerClient();
   const [profileResult, requestResult, orderResult, notificationResult] = await Promise.all([
     supabase!.from("profiles").select("full_name,home_city").eq("id", user.id).maybeSingle(),
     supabase!.from("sos_requests").select("id,product_name,quantity,city,area,urgency,delivery_method,status,created_at,expires_at").eq("requester_id", user.id).order("created_at", { ascending: false }).limit(20),
-    supabase!.from("orders").select("id,status,total_kobo,created_at,businesses(name,slug)").eq("buyer_id", user.id).order("created_at", { ascending: false }).limit(20),
+    supabase!.from("orders").select("id,status,total_kobo,currency,created_at,businesses(name,slug)").eq("buyer_id", user.id).order("created_at", { ascending: false }).limit(20),
     supabase!.from("notifications").select("id,kind,title,body,read_at,created_at,entity_type,entity_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(8),
   ]);
   const profile = profileResult.data;
@@ -36,7 +36,7 @@ export default async function BuyerDashboardPage() {
   const requestIds = requests.filter((request) => ["open", "matched"].includes(request.status)).map((request) => request.id);
   const [{ data: quotes }, { data: feeResult }] = await Promise.all([
     requestIds.length
-      ? supabase!.from("quotations").select("id,request_id,unit_price_kobo,quantity_offered,delivery_fee_kobo,delivery_available,preparation_minutes,expires_at,businesses(name,slug)").in("request_id", requestIds).eq("status", "submitted").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false })
+      ? supabase!.from("quotations").select("id,request_id,unit_price_kobo,quantity_offered,delivery_fee_kobo,delivery_available,preparation_minutes,currency,expires_at,businesses(name,slug)").in("request_id", requestIds).eq("status", "submitted").gt("expires_at", new Date().toISOString()).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     supabase!.rpc("get_marketplace_fee_bps"),
   ]);
@@ -74,14 +74,14 @@ export default async function BuyerDashboardPage() {
                   </div>
                   {requestQuotes.length ? <div className="quote-list"><h4>{requestQuotes.length} quotation{requestQuotes.length === 1 ? "" : "s"}</h4>{requestQuotes.map((quote) => {
                     const business = Array.isArray(quote.businesses) ? quote.businesses[0] : quote.businesses;
-                    const cost = quoteTotalKobo({
+                    const cost = quoteTotalMinorUnits({
                       unitPriceKobo: Number(quote.unit_price_kobo),
                       quantity: request.quantity,
                       deliveryFeeKobo: Number(quote.delivery_fee_kobo ?? 0),
                       pickup: request.delivery_method === "pickup" || !quote.delivery_available,
                       platformFeeBps: marketplaceFeeBps,
                     });
-                    return <div className="quote-row" key={quote.id}><div><strong>{business?.name ?? "Supplier"}</strong><span className="muted small">{quote.quantity_offered} available · {quote.delivery_available ? "Delivery available" : "Pickup"}{quote.preparation_minutes ? " · about " + quote.preparation_minutes + " min" : ""}</span><span className="quote-cost-note">Items {formatNaira(cost.subtotal)}{cost.delivery ? ` · Delivery ${formatNaira(cost.delivery)}` : ""}{cost.platformFee ? ` · Platform fee ${formatNaira(cost.platformFee)}` : ""}</span></div><div className="quote-action"><strong>{formatNaira(cost.total)}</strong><form action={acceptQuotationAction}><input type="hidden" name="quotation_id" value={quote.id} /><button className="button button-primary button-small" type="submit">Choose offer</button></form></div></div>;
+                    return <div className="quote-row" key={quote.id}><div><strong>{business?.name ?? "Supplier"}</strong><span className="muted small">{quote.quantity_offered} available · {quote.delivery_available ? "Delivery available" : "Pickup"}{quote.preparation_minutes ? " · about " + quote.preparation_minutes + " min" : ""}</span><span className="quote-cost-note">Items {formatMoney(cost.subtotal, quote.currency)}{cost.delivery ? ` · Delivery ${formatMoney(cost.delivery, quote.currency)}` : ""}{cost.platformFee ? ` · Platform fee ${formatMoney(cost.platformFee, quote.currency)}` : ""}</span></div><div className="quote-action"><strong>{formatMoney(cost.total, quote.currency)}</strong><form action={acceptQuotationAction}><input type="hidden" name="quotation_id" value={quote.id} /><button className="button button-primary button-small" type="submit">Choose offer</button></form></div></div>;
                   })}</div> : request.status === "open" ? <p className="request-waiting"><Clock3 size={14} /> Waiting for matching suppliers to respond.</p> : null}
                 </article>;
               })}</div> : <div className="empty-state"><div className="empty-state-icon"><PackageSearch size={21} /></div><h3>No requests yet</h3><p>When your business needs stock, create an SOS request and review supplier offers here.</p><Link className="button button-primary" href="/sos">Create your first request</Link></div>}
@@ -90,7 +90,7 @@ export default async function BuyerDashboardPage() {
               <div className="dashboard-section-head"><h2>Recent orders</h2><span className="muted small">{orders.length} recorded</span></div>
               {orders.length ? <div className="order-list">{orders.map((order) => {
                 const business = Array.isArray(order.businesses) ? order.businesses[0] : order.businesses;
-                return <Link className="order-row" href={"/orders/" + order.id} key={order.id}><span className="order-icon"><PackageCheck size={18} /></span><span className="order-copy"><strong>{business?.name ?? "Supplier order"}</strong><small>{dateLabel(order.created_at)} · {formatNaira(order.total_kobo)}</small></span><span className={statusClass(order.status)}>{order.status.replaceAll("_", " ")}</span><ArrowRight size={15} /></Link>;
+                return <Link className="order-row" href={"/orders/" + order.id} key={order.id}><span className="order-icon"><PackageCheck size={18} /></span><span className="order-copy"><strong>{business?.name ?? "Supplier order"}</strong><small>{dateLabel(order.created_at)} · {formatMoney(order.total_kobo, order.currency)}</small></span><span className={statusClass(order.status)}>{order.status.replaceAll("_", " ")}</span><ArrowRight size={15} /></Link>;
               })}</div> : <p className="muted small">Orders will appear after you accept a quotation.</p>}
             </section>
           </div>

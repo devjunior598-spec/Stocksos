@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getPlatformRole, requireAdmin, requireSupportStaff, requireUser } from "@/lib/auth";
+import { getAccountHome, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { nairaToKobo } from "@/lib/money";
+import { moneyToMinorUnits } from "@/lib/money";
 import { isMarketplaceImagePathForBusiness } from "@/lib/image-path";
 
 function value(formData: FormData, name: string) {
@@ -28,13 +28,8 @@ export async function signInAction(formData: FormData) {
   if (!supabase) redirect("/login?setup=required");
   const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect("/login?error=invalid");
-  if (await getPlatformRole(signInData.user.id) === "admin") {
-    revalidatePath("/", "layout");
-    redirect("/admin");
-  }
-  const next = value(formData, "next");
   revalidatePath("/", "layout");
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
+  redirect(await getAccountHome(signInData.user.id));
 }
 
 export async function signUpAction(formData: FormData) {
@@ -42,10 +37,12 @@ export async function signUpAction(formData: FormData) {
     fullName: z.string().trim().min(2).max(120),
     email: z.email(),
     password: z.string().min(10).max(128),
+    marketplaceRole: z.enum(["buyer", "supplier"]),
   }).safeParse({
     fullName: value(formData, "full_name"),
     email: value(formData, "email").toLowerCase(),
     password: value(formData, "password"),
+    marketplaceRole: value(formData, "marketplace_role"),
   });
   if (!parsed.success) redirect("/register?error=invalid");
   const supabase = await createSupabaseServerClient();
@@ -55,7 +52,7 @@ export async function signUpAction(formData: FormData) {
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: { full_name: parsed.data.fullName },
+      data: { full_name: parsed.data.fullName, marketplace_role: parsed.data.marketplaceRole },
       emailRedirectTo: new URL("/auth/callback?next=/onboarding", baseUrl).toString(),
     },
   });
@@ -88,7 +85,7 @@ export async function updatePasswordAction(formData: FormData) {
   if (!data?.claims?.sub) redirect("/login");
   const { error } = await supabase.auth.updateUser({ password });
   if (error) redirect("/reset-password?error=update");
-  redirect(await getPlatformRole(data.claims.sub) === "admin" ? "/admin" : "/dashboard");
+  redirect(await getAccountHome(data.claims.sub));
 }
 
 export async function signOutAction() {
@@ -140,16 +137,19 @@ export async function saveOnboardingAction(formData: FormData) {
   }).eq("id", user.id);
   if (error) redirect("/onboarding?error=save");
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  redirect(await getAccountHome(user.id));
 }
 
 export async function createBusinessApplicationAction(formData: FormData) {
-  await requireUser();
+  await requireSupplier();
   const parsed = z.object({
     name: z.string().trim().min(2).max(120),
     slug: z.string().trim().min(2).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     categoryId: z.uuid(),
+    country: z.string().trim().length(2).regex(/^[A-Z]{2}$/),
+    region: z.string().trim().min(2).max(100),
     city: z.string().trim().min(2).max(100),
+    postalCode: z.string().trim().max(20).optional(),
     area: z.string().trim().max(100).optional(),
     phone: z.string().trim().max(30).optional(),
     email: z.union([z.email(), z.literal("")]).optional(),
@@ -159,7 +159,10 @@ export async function createBusinessApplicationAction(formData: FormData) {
     name: value(formData, "name"),
     slug: value(formData, "slug"),
     categoryId: value(formData, "category_id"),
+    country: value(formData, "country").toUpperCase(),
+    region: value(formData, "region"),
     city: value(formData, "city"),
+    postalCode: value(formData, "postal_code"),
     area: value(formData, "area"),
     phone: value(formData, "phone"),
     email: value(formData, "email"),
@@ -172,7 +175,10 @@ export async function createBusinessApplicationAction(formData: FormData) {
     p_name: parsed.data.name,
     p_slug: parsed.data.slug,
     p_category_id: parsed.data.categoryId,
+    p_country: parsed.data.country,
+    p_region: parsed.data.region,
     p_city: parsed.data.city,
+    p_postal_code: parsed.data.postalCode || null,
     p_area: parsed.data.area || null,
     p_phone: parsed.data.phone || null,
     p_email: parsed.data.email || null,
@@ -185,7 +191,7 @@ export async function createBusinessApplicationAction(formData: FormData) {
 }
 
 export async function createSOSAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const parsed = z.object({
     categoryId: z.uuid(),
     productName: z.string().trim().min(2).max(180),
@@ -225,18 +231,16 @@ export async function createSOSAction(formData: FormData) {
     redirect("/sos?error=invalid");
   }
   const supabase = await createSupabaseServerClient();
-  const locationContext = [
-    `Country: ${parsed.data.country}`,
-    `Region: ${parsed.data.region}`,
-    parsed.data.postalCode ? `Postal code: ${parsed.data.postalCode}` : "",
-    parsed.data.address ? `Address: ${parsed.data.address}` : "",
-  ].filter(Boolean).join(" · ");
-  const notes = [locationContext, parsed.data.notes].filter(Boolean).join("\n");
+  const notes = [parsed.data.address ? `Delivery address: ${parsed.data.address}` : "", parsed.data.notes]
+    .filter(Boolean).join("\n");
   const { data: requestId, error } = await supabase!.rpc("create_sos_request", {
     p_category_id: parsed.data.categoryId,
     p_product_name: parsed.data.productName,
     p_quantity: parsed.data.quantity,
+    p_country: parsed.data.country,
+    p_region: parsed.data.region,
     p_city: parsed.data.city,
+    p_postal_code: parsed.data.postalCode || null,
     p_area: parsed.data.area || null,
     p_delivery_method: parsed.data.deliveryMethod,
     p_urgency: parsed.data.urgency,
@@ -252,7 +256,7 @@ export async function createSOSAction(formData: FormData) {
 }
 
 export async function cancelSOSAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const id = value(formData, "request_id");
   if (!z.uuid().safeParse(id).success) redirect("/dashboard?error=invalid");
   const supabase = await createSupabaseServerClient();
@@ -263,7 +267,7 @@ export async function cancelSOSAction(formData: FormData) {
 }
 
 export async function submitQuotationAction(formData: FormData) {
-  await requireUser();
+  await requireSupplier();
   const parsed = z.object({
     requestId: z.uuid(),
     businessId: z.uuid(),
@@ -285,9 +289,9 @@ export async function submitQuotationAction(formData: FormData) {
     preparationMinutes: value(formData, "preparation_minutes"),
     note: value(formData, "note"),
   });
-  const priceKobo = parsed.success ? nairaToKobo(parsed.data.price) : null;
+  const priceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price) : null;
   const deliveryFeeKobo = parsed.success
-    ? (parsed.data.deliveryFee === "0" ? 0 : nairaToKobo(parsed.data.deliveryFee, true))
+    ? (parsed.data.deliveryFee === "0" ? 0 : moneyToMinorUnits(parsed.data.deliveryFee, true))
     : null;
   const preparation = parsed.success && parsed.data.preparationMinutes
     ? Number(parsed.data.preparationMinutes)
@@ -315,7 +319,7 @@ export async function submitQuotationAction(formData: FormData) {
 }
 
 export async function acceptQuotationAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const id = value(formData, "quotation_id");
   if (!z.uuid().safeParse(id).success) redirect("/dashboard?error=invalid");
   const supabase = await createSupabaseServerClient();
@@ -326,7 +330,7 @@ export async function acceptQuotationAction(formData: FormData) {
 }
 
 export async function createSupplierProductAction(formData: FormData) {
-  await requireUser();
+  await requireSupplier();
   const parsed = z.object({
     businessId: z.uuid(),
     categoryId: z.uuid(),
@@ -350,7 +354,7 @@ export async function createSupplierProductAction(formData: FormData) {
     visibility: value(formData, "visibility"),
     imagePath: value(formData, "image_path"),
   });
-  const unitPriceKobo = parsed.success ? nairaToKobo(parsed.data.price, true) : null;
+  const unitPriceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
   if (!parsed.success || unitPriceKobo === null
     || (parsed.data.imagePath && !isMarketplaceImagePathForBusiness(parsed.data.imagePath, parsed.data.businessId))) {
     redirect("/supplier?error=product");
@@ -378,7 +382,7 @@ export async function createSupplierProductAction(formData: FormData) {
 }
 
 export async function updateSupplierProductAction(formData: FormData) {
-  await requireUser();
+  await requireSupplier();
   const parsed = z.object({
     productId: z.uuid(),
     name: z.string().trim().min(2).max(180),
@@ -402,7 +406,7 @@ export async function updateSupplierProductAction(formData: FormData) {
     isActive: value(formData, "is_active"),
     imagePath: value(formData, "image_path"),
   });
-  const priceKobo = parsed.success ? nairaToKobo(parsed.data.price, true) : null;
+  const priceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
   if (!parsed.success || priceKobo === null) redirect("/supplier?error=product");
   const supabase = await createSupabaseServerClient();
   const { data: currentProduct } = await supabase!.from("products")
@@ -437,7 +441,7 @@ export async function updateSupplierProductAction(formData: FormData) {
 }
 
 export async function deleteSupplierProductAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireSupplier();
   const productId = value(formData, "product_id");
   if (!z.uuid().safeParse(productId).success) redirect("/supplier?error=product");
   const supabase = await createSupabaseServerClient();
@@ -542,7 +546,7 @@ export async function adminUpdatePlanAction(formData: FormData) {
   const price = value(formData, "price");
   const benefits = value(formData, "benefits").split("\n").map((item) => item.trim()).filter(Boolean).slice(0, 12);
   const isActive = value(formData, "is_active") === "yes";
-  const monthlyPriceKobo = price === "0" ? 0 : nairaToKobo(price, true);
+  const monthlyPriceKobo = price === "0" ? 0 : moneyToMinorUnits(price, true);
   if (!/^[a-z0-9-]{2,60}$/.test(planId) || monthlyPriceKobo === null || benefits.some((item) => item.length > 120)) {
     redirect("/admin?error=plan");
   }
@@ -573,7 +577,7 @@ export async function adminUpdateMarketplaceFeeAction(formData: FormData) {
 }
 
 export async function updateSupplierOrderStatusAction(formData: FormData) {
-  await requireUser();
+  await requireSupplier();
   const orderId = value(formData, "order_id");
   const status = value(formData, "status");
   if (!z.uuid().safeParse(orderId).success || !["preparing", "ready_for_pickup"].includes(status)) {
@@ -616,7 +620,7 @@ export async function updateDeliveryJobStatusAction(formData: FormData) {
 }
 
 export async function buyerConfirmReceiptAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const orderId = value(formData, "order_id");
   if (!z.uuid().safeParse(orderId).success) redirect("/dashboard?error=invalid");
   const supabase = await createSupabaseServerClient();
@@ -647,7 +651,7 @@ export async function createSupportCaseAction(formData: FormData) {
 }
 
 export async function createBusinessEnquiryAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const parsed = z.object({
     businessId: z.uuid(),
     productName: z.string().trim().min(2).max(180),
@@ -673,7 +677,7 @@ export async function createBusinessEnquiryAction(formData: FormData) {
 }
 
 export async function updateBusinessEnquiryStatusAction(formData: FormData) {
-  await requireUser();
+  await requireSupplier();
   const enquiryId = value(formData, "enquiry_id");
   const status = value(formData, "status");
   if (!z.uuid().safeParse(enquiryId).success || !["sourcing", "referred", "closed"].includes(status)) {
@@ -691,7 +695,7 @@ export async function updateBusinessEnquiryStatusAction(formData: FormData) {
 }
 
 export async function saveSupplierAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireBuyer();
   const businessId = value(formData, "business_id");
   const slug = value(formData, "slug");
   const intent = value(formData, "intent");
@@ -737,7 +741,7 @@ export async function markNotificationReadAction(formData: FormData) {
 }
 
 export async function createOrderDisputeAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const parsed = z.object({
     orderId: z.uuid(),
     caseType: z.enum(["cancellation", "refund", "missing_item", "incorrect_product", "damaged_product", "supplier_non_fulfilment"]),
@@ -763,7 +767,7 @@ export async function createOrderDisputeAction(formData: FormData) {
 }
 
 export async function createOrderReviewAction(formData: FormData) {
-  await requireUser();
+  await requireBuyer();
   const parsed = z.object({
     orderId: z.uuid(),
     productAccuracy: z.coerce.number().int().min(1).max(5),

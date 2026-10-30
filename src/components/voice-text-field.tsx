@@ -30,7 +30,7 @@ function recognitionErrorMessage(code: string | undefined) {
     case "network":
       return "Your browser’s speech service is unavailable. On Android, try Chrome with Google voice services enabled, or type the request instead.";
     case "language-not-supported":
-      return "This browser does not support English (Nigeria) voice input. Type the request instead.";
+      return "Your browser does not support the selected voice language. Try your device language or type the request instead.";
     case "aborted":
       return "Voice input stopped. Tap Speak when you are ready to try again.";
     default:
@@ -187,9 +187,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
       return;
     }
     const next = new RecognitionConstructor();
-    // en-US is supported by the Android speech service more consistently than
-    // en-NG. The transcript remains editable, so users can speak naturally.
-    next.lang = "en-US";
+    next.lang = navigator.language || "en-US";
     next.interimResults = false;
     next.continuous = false;
     next.onstart = () => {
@@ -227,7 +225,6 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
 
   return <div className="voice-field"><div className="voice-field-row"><input id={id} name={name} value={value} onChange={(event) => { setValue(event.target.value); onValueChange?.(event.target.value); }} placeholder={placeholder} maxLength={maxLength} required={required} /><button className="button button-secondary button-small voice-button" type="button" onClick={toggleVoice} disabled={transcribing} aria-pressed={listening} aria-label={listening ? "Stop voice input" : "Start voice input"}>{transcribing ? <LoaderCircle size={15} className="spin" /> : listening ? <MicOff size={15} /> : <Mic size={15} />}{transcribing ? "Transcribing" : listening ? "Stop" : "Speak"}</button></div>
     <span className={`form-hint voice-status${listening ? " voice-status-listening" : ""}`} role={error ? "alert" : "status"}>{error || (transcribing ? "Securely transcribing your short recording…" : listening ? "Listening… speak clearly, then tap Stop when finished." : "Tap Speak to start. Your words will appear here for review before you submit.")}</span>
-    <label className="voice-consent"><input type="checkbox" checked={audioConsent} onChange={(event) => setAudioConsent(event.target.checked)} /> If device speech fails, allow a short recording to be sent securely to StockSOS for transcription. Audio is processed for text and not stored by StockSOS.</label>
     {fallbackAvailable ? <label className="voice-consent"><input type="checkbox" checked={audioConsent} onChange={(event) => setAudioConsent(event.target.checked)} /> If device speech fails, allow a short recording to be sent securely to our transcription provider. StockSOS does not store the recording.</label> : <span className="form-hint">Device speech is tried first. Secure audio backup can be enabled by configuring the server transcription key.</span>}
     {reply ? <div className="voice-reply" role="status"><Search size={15} /><span>{reply}</span>{typeof window !== "undefined" && "speechSynthesis" in window ? <button type="button" className="voice-read-reply" onClick={() => { const speech = new SpeechSynthesisUtterance(reply); speech.lang = "en-US"; window.speechSynthesis.cancel(); window.speechSynthesis.speak(speech); }}>Read reply</button> : null}</div> : null}
     {liveProducts.length ? <div className="voice-results" aria-label="Live supplier matches">{liveProducts.map((product) => <a href={product.supplierUrl} className="voice-result" key={`${product.supplier}-${product.name}`}><span><strong>{product.name}</strong>{product.brand ? <small>{product.brand}</small> : null}<small>{product.supplier} · {product.city} · {product.quantityAvailable} available</small></span><b>{product.price ?? "Price on request"}</b></a>)}</div> : null}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { buildReceiptPdf } from "@/lib/receipt-pdf";
-import { formatNaira } from "@/lib/data";
+import { formatMoney } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -28,17 +28,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     `Order: ${order.id}`,
     `Payment reference: ${payment.provider_reference}`,
     `Payment date: ${payment.verified_at ?? order.paid_at ?? order.created_at}`,
-    `Supplier: ${business?.name ?? "Supplier"} (${business?.city ?? "Nigeria"})`,
+    `Supplier: ${business?.name ?? "Supplier"} (${business?.city ?? "Location not listed"})`,
     "",
     "ITEMS",
-    ...items.map((item: { product_name: string; quantity: number; unit_price_kobo: number }) => `${item.product_name} x${item.quantity} — ${formatNaira(item.unit_price_kobo * item.quantity)}`),
+    ...items.map((item: { product_name: string; quantity: number; unit_price_kobo: number }) => `${item.product_name} x${item.quantity} — ${formatMoney(item.unit_price_kobo * item.quantity, order.currency)}`),
     "",
-    `Subtotal: ${formatNaira(order.subtotal_kobo)}`,
-    `Delivery: ${formatNaira(order.delivery_fee_kobo)}`,
-    `StockSOS platform fee: ${formatNaira(order.platform_fee_kobo)}`,
-    `TOTAL: ${formatNaira(order.total_kobo)}`,
+    `Subtotal: ${formatMoney(order.subtotal_kobo, order.currency)}`,
+    `Delivery: ${formatMoney(order.delivery_fee_kobo, order.currency)}`,
+    `StockSOS platform fee: ${formatMoney(order.platform_fee_kobo, order.currency)}`,
+    `TOTAL: ${formatMoney(order.total_kobo, order.currency)}`,
     "",
-    "This receipt reflects a provider-verified Paystack transaction. StockSOS does not operate an escrow wallet.",
+    "This receipt reflects a provider-verified transaction. StockSOS does not operate an escrow wallet.",
   ];
   const pdf = buildReceiptPdf(lines);
   return new NextResponse(pdf as BodyInit, {
