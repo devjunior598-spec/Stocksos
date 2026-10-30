@@ -22,13 +22,13 @@ export default async function SOSPage({ searchParams }: Props) {
     ? (await supabase.from("profiles").select("home_city").eq("id", user.id).maybeSingle()).data
     : profileResult.data;
   const location = {
-    country: (profile as { home_country?: string } | null)?.home_country ?? "US",
+    country: (profile as { home_country?: string } | null)?.home_country ?? "",
     region: (profile as { home_region?: string } | null)?.home_region ?? "",
     city: profile?.home_city ?? "",
     postalCode: (profile as { home_postal_code?: string } | null)?.home_postal_code ?? "",
     area: (profile as { home_area?: string } | null)?.home_area ?? "",
     address: (profile as { home_address?: string } | null)?.home_address ?? "",
-    defaultDeliveryMethod: ((profile as { default_delivery_method?: "pickup" | "delivery" | "flexible" } | null)?.default_delivery_method ?? "flexible"),
+    defaultDeliveryMethod: ((profile as { default_delivery_method?: "pickup" | "delivery" | "flexible" | "both" } | null)?.default_delivery_method ?? "both"),
   };
   const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
   return (

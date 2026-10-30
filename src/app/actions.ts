@@ -109,7 +109,7 @@ export async function saveOnboardingAction(formData: FormData) {
     postalCode: z.string().trim().max(20).optional(),
     area: z.string().trim().max(100).optional(),
     address: z.string().trim().max(240).optional(),
-    defaultDeliveryMethod: z.enum(["pickup", "delivery", "flexible"]),
+    defaultDeliveryMethod: z.enum(["pickup", "delivery", "flexible", "both"]),
   }).safeParse({
     fullName: value(formData, "full_name"),
     phone: value(formData, "phone"),
@@ -205,7 +205,7 @@ export async function createSOSAction(formData: FormData) {
     postalCode: z.string().trim().max(20).optional(),
     area: z.string().trim().max(100).optional(),
     address: z.string().trim().max(240).optional(),
-    deliveryMethod: z.enum(["pickup", "delivery", "flexible"]),
+    deliveryMethod: z.enum(["pickup", "delivery", "flexible", "both"]),
     urgency: z.enum(["immediately", "within_30_minutes", "within_2_hours", "today", "scheduled"]),
     specifications: z.string().trim().max(1000).optional(),
     condition: z.enum(["new", "used", "refurbished", "any"]),

@@ -32,14 +32,14 @@ export default async function OnboardingPage({ searchParams }: Props) {
             <div className="form-field"><label htmlFor="full_name">Your name</label><input id="full_name" name="full_name" defaultValue={data?.full_name ?? ""} required minLength={2} maxLength={120} autoComplete="name" /></div>
             <div className="form-field"><label htmlFor="phone">Business phone <span className="muted">(optional)</span></label><input id="phone" name="phone" type="tel" defaultValue={data?.phone ?? ""} autoComplete="tel" maxLength={30} /></div>
             <GlobalLocationFields description={marketplaceRole === "supplier" ? "Saved securely as your default business location." : "Saved securely to speed up future sourcing and fulfilment."} defaults={{
-              country: (data as { home_country?: string } | null)?.home_country ?? "US",
+              country: (data as { home_country?: string } | null)?.home_country,
               region: (data as { home_region?: string } | null)?.home_region,
               city: data?.home_city,
               postalCode: (data as { home_postal_code?: string } | null)?.home_postal_code,
               area: (data as { home_area?: string } | null)?.home_area,
               address: (data as { home_address?: string } | null)?.home_address,
             }} />
-            <div className="form-field"><label htmlFor="default_delivery_method">Default fulfilment preference</label><select id="default_delivery_method" name="default_delivery_method" defaultValue={(data as { default_delivery_method?: string } | null)?.default_delivery_method ?? "flexible"}><option value="flexible">I’m flexible</option><option value="delivery">I need delivery</option><option value="pickup">I can pick up</option></select><span className="form-hint"><MapPin size={12} /> Your saved location stays private to your account and helps prefill SOS requests.</span></div>
+            <div className="form-field"><label htmlFor="default_delivery_method">Default fulfilment preference</label><select id="default_delivery_method" name="default_delivery_method" defaultValue={(data as { default_delivery_method?: string } | null)?.default_delivery_method ?? "both"}><option value="both">Both: pickup or delivery</option><option value="delivery">Delivery to me</option><option value="pickup">I can pick it up</option><option value="flexible">No preference</option></select><span className="form-hint"><MapPin size={12} /> “Both” lets you choose pickup or delivery for each request. “No preference” lets the supplier recommend.</span></div>
             <button className="button button-primary form-submit" type="submit">Save profile <ArrowRight size={16} /></button>
           </form>
         </div>
