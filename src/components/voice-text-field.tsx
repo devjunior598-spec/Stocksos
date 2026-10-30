@@ -85,7 +85,11 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: transcript }),
       });
-      const result = await response.json() as { message?: string; error?: string; products?: LiveProduct[] };
+      const result = await response.json() as { message?: string; error?: string; products?: LiveProduct[]; searchUrl?: string };
+      if (response.ok && name === "q" && result.searchUrl?.startsWith("/find-stock?")) {
+        window.location.assign(result.searchUrl);
+        return;
+      }
       setReply(response.ok ? result.message ?? "StockSOS received your request." : result.error ?? "Stock search could not be completed.");
       if (response.ok) setLiveProducts(result.products ?? []);
     } catch {

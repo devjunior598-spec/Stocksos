@@ -6,7 +6,7 @@ import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { z } from "zod";
 import { VoiceTextField } from "@/components/voice-text-field";
 
-type Props = { searchParams: Promise<{ q?: string; category?: string; city?: string; min?: string; max?: string }> };
+type Props = { searchParams: Promise<{ q?: string; category?: string; city?: string; min?: string; max?: string; interpreted?: string }> };
 
 export default async function FindStockPage({ searchParams }: Props) {
   const params = await searchParams;
@@ -32,11 +32,12 @@ export default async function FindStockPage({ searchParams }: Props) {
       </div></section>
       <section className="section-tight"><div className="page-container">
         <SupabaseSetupNotice />
+        {params.interpreted === "1" ? <div className="notice" role="status"><div><strong>Your spoken search has been applied.</strong><p>Review or change the filters below. {city ? `Searching in ${city}.` : "No city was provided or saved; results include all cities."} {categoryId ? "A matching category was selected." : "Category was uncertain, so all categories are included."} Prices are per unit in NGN.</p></div></div> : null}
         {productError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Stock search could not be completed.</strong><p>{productError}</p></div></div> : null}
         <form className="filter-row" action="/find-stock">
           <input type="hidden" name="q" value={search} />
           <div className="form-field"><label htmlFor="category">Category</label><select id="category" name="category" defaultValue={categoryId ?? ""}><option value="">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>
-          <div className="form-field"><label htmlFor="city">City</label><input id="city" name="city" defaultValue={city} placeholder="Ibadan" /></div>
+          <div className="form-field"><label htmlFor="city">City</label><input id="city" name="city" defaultValue={city} placeholder="Enter a city" /></div>
           <div className="form-field"><label htmlFor="min">Minimum ₦</label><input id="min" name="min" type="number" min="0" step="0.01" defaultValue={params.min ?? ""} /></div>
           <div className="form-field"><label htmlFor="max">Maximum ₦</label><input id="max" name="max" type="number" min="0" step="0.01" defaultValue={params.max ?? ""} /></div>
           <button className="button button-secondary" type="submit">Apply filters</button>
