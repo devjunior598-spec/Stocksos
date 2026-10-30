@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth";
+import { getPlatformRole, requireAdmin, requireSupportStaff, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { nairaToKobo } from "@/lib/money";
 import { isMarketplaceImagePathForBusiness } from "@/lib/image-path";
@@ -26,8 +26,12 @@ export async function signInAction(formData: FormData) {
   if (!parsed.success) redirect("/login?error=invalid");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/login?setup=required");
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect("/login?error=invalid");
+  if (await getPlatformRole(signInData.user.id) === "admin") {
+    revalidatePath("/", "layout");
+    redirect("/admin");
+  }
   const next = value(formData, "next");
   revalidatePath("/", "layout");
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
@@ -47,7 +51,7 @@ export async function signUpAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/register?setup=required");
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
@@ -55,7 +59,8 @@ export async function signUpAction(formData: FormData) {
       emailRedirectTo: new URL("/auth/callback?next=/onboarding", baseUrl).toString(),
     },
   });
-  if (error) redirect("/register?error=signup");
+  if (error) redirect(error.message.toLowerCase().includes("already") ? "/register?error=duplicate" : "/register?error=signup");
+  if (signUpData.user && signUpData.user.identities?.length === 0) redirect("/register?error=duplicate");
   redirect("/check-email");
 }
 
@@ -83,7 +88,7 @@ export async function updatePasswordAction(formData: FormData) {
   if (!data?.claims?.sub) redirect("/login");
   const { error } = await supabase.auth.updateUser({ password });
   if (error) redirect("/reset-password?error=update");
-  redirect("/dashboard");
+  redirect(await getPlatformRole(data.claims.sub) === "admin" ? "/admin" : "/dashboard");
 }
 
 export async function signOutAction() {
@@ -477,7 +482,7 @@ export async function deleteSupplierProductAction(formData: FormData) {
 }
 
 export async function adminReviewBusinessAction(formData: FormData) {
-  await requireUser();
+  await requireAdmin();
   const id = value(formData, "business_id");
   const status = value(formData, "status");
   const note = value(formData, "note");
@@ -514,7 +519,7 @@ export async function applyDeliveryPartnerAction(formData: FormData) {
 }
 
 export async function adminReviewDeliveryPartnerAction(formData: FormData) {
-  await requireUser();
+  await requireAdmin();
   const partnerId = value(formData, "partner_id");
   const status = value(formData, "status");
   if (!z.uuid().safeParse(partnerId).success || !["approved", "rejected", "suspended"].includes(status)) {
@@ -532,7 +537,7 @@ export async function adminReviewDeliveryPartnerAction(formData: FormData) {
 }
 
 export async function adminUpdatePlanAction(formData: FormData) {
-  await requireUser();
+  await requireAdmin();
   const planId = value(formData, "plan_id");
   const price = value(formData, "price");
   const benefits = value(formData, "benefits").split("\n").map((item) => item.trim()).filter(Boolean).slice(0, 12);
@@ -555,7 +560,7 @@ export async function adminUpdatePlanAction(formData: FormData) {
 }
 
 export async function adminUpdateMarketplaceFeeAction(formData: FormData) {
-  await requireUser();
+  await requireAdmin();
   const fee = value(formData, "fee_percent");
   if (!/^\d{1,2}(?:\.\d{1,2})?$/.test(fee)) redirect("/admin?error=fee");
   const feeBps = Math.round(Number(fee) * 100);
@@ -703,7 +708,7 @@ export async function saveSupplierAction(formData: FormData) {
 }
 
 export async function updateSupportCaseStatusAction(formData: FormData) {
-  await requireUser();
+  await requireSupportStaff();
   const caseId = value(formData, "case_id");
   const status = value(formData, "status");
   if (!z.uuid().safeParse(caseId).success || !["open", "in_progress", "resolved", "closed"].includes(status)) {

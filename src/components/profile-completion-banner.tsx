@@ -18,10 +18,10 @@ export async function ProfileCompletionBanner() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data, error } = await supabase.from("profiles")
-    .select("home_country,home_region,home_city,home_postal_code,home_area,home_address")
+    .select("platform_role,home_country,home_region,home_city,home_postal_code,home_area,home_address")
     .eq("id", user.id)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !data || data.platform_role === "admin") return null;
   const missing = FIELD_LABELS.filter(([field]) => !String(data[field as keyof typeof data] ?? "").trim()).map(([, label]) => label);
   if (!missing.length) return null;
   const summary = missing.length > 2
