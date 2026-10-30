@@ -638,6 +638,22 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 .workflow-number { color: #50695b; font-size: 14px; }
 .feature-card, .panel, .stat-card, .product-card, .auth-panel { border-color: var(--line); border-radius: 22px; box-shadow: 0 8px 28px #213d3406; }
 .feature-icon { border-radius: 50%; }
+.reach-home-section { background: #e8f0e4; }
+.reach-home-grid { display: grid; grid-template-columns: 1fr .85fr; align-items: center; gap: 60px; }
+.reach-home-grid h2 { max-width: 560px; }
+.reach-home-preview { padding: 18px; border: 1px solid #ceddce; border-radius: 24px; background: #fffdf9; box-shadow: 0 18px 44px #203b3110; }
+.reach-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px 15px; color: var(--navy); font-size: 13px; }
+.reach-preview-row { display: flex; align-items: center; gap: 10px; padding: 13px 0; border-top: 1px solid #e6ece3; }
+.reach-preview-row .feature-icon { width: 36px; height: 36px; margin: 0; }
+.reach-preview-row > div { min-width: 0; flex: 1; }
+.reach-preview-row strong, .reach-preview-row small { display: block; }
+.reach-preview-row strong { color: var(--navy); font-size: 12px; }
+.reach-preview-row small { margin-top: 2px; color: var(--muted); font-size: 10px; }
+.flow-action { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 30px; }
+.reach-explainer { display: grid; grid-template-columns: 1fr .8fr; align-items: center; gap: 70px; }
+.reach-explainer-points { display: grid; gap: 13px; }
+.reach-explainer-points p { display: flex; align-items: flex-start; gap: 9px; margin: 0; padding: 13px; color: #476457; background: #f4f7f1; border: 1px solid #e1e9dc; border-radius: 12px; font-size: 12px; line-height: 1.55; }
+.reach-explainer-points svg { flex: 0 0 auto; color: var(--green); }
 .page-hero { background: #f1f4ec; border-bottom: 1px solid var(--line); }
 .page-hero h1 { max-width: 850px; }
 .site-footer { background: #eaf0e5; border-color: #d6e0d0; }
@@ -649,6 +665,7 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline-color: #087f7190; }
 @media (max-width: 900px) {
   .hero-grid { gap: 28px; }
+  .reach-home-grid, .reach-explainer { gap: 34px; }
   .hero-stock-search > div { flex-wrap: wrap; }
   .hero-stock-search .button { width: 100%; }
 }
@@ -661,6 +678,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .hero-buttons .button { flex: 1 1 180px; }
   .form-field input, .form-field select, .form-field textarea { font-size: 16px; }
   .proof-inner { gap: 16px 22px; }
+  .reach-home-grid, .reach-explainer { grid-template-columns: 1fr; gap: 26px; }
+  .reach-home-preview { padding: 15px; border-radius: 18px; }
+  .flow-action { align-items: stretch; flex-direction: column; margin-top: 24px; }
+  .flow-action .button { width: 100%; }
 }
 
 /* Compact density: keep the same visual language while showing more useful

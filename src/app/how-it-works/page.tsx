@@ -1,20 +1,25 @@
-import { InfoPage } from "@/components/info-page";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2, CheckCircle2, Globe2, Megaphone, PackageSearch, ShieldCheck, Truck, Zap } from "lucide-react";
+
+const buyerSteps = [
+  { icon: PackageSearch, title: "Tell StockSOS what you need", copy: "Describe the item by text or voice. StockSOS uses your saved sourcing location to prepare a request." },
+  { icon: Zap, title: "Check available stock", copy: "See eligible public listings first. If the item is not available, confirm an SOS request for matched suppliers." },
+  { icon: Boxes, title: "Compare real quotations", copy: "Suppliers respond with their offered quantity, price, preparation time and delivery availability." },
+  { icon: Truck, title: "Choose your next step", copy: "Accept an offer to create an order and follow the fulfilment process from your dashboard." },
+];
+const supplierSteps = [
+  { icon: Building2, title: "Apply and get verified", copy: "Supplier businesses are reviewed before public listings and SOS matching can be enabled." },
+  { icon: PackageSearch, title: "Add real inventory", copy: "Publish accurate product photos, quantities, specifications and prices from your supplier workspace." },
+  { icon: Globe2, title: "Open your storefront", copy: "Eligible public inventory receives a supplier storefront and permanent product page for discovery." },
+  { icon: Megaphone, title: "Grow with Reach", copy: "Prepare marketing content and explore connected channels only after supplier authorization and eligibility checks." },
+];
 
 export default function HowItWorksPage() {
-  return <InfoPage
-    eyebrow="How StockSOS works"
-    title="A clear path from stockout to supply."
-    intro="StockSOS helps businesses describe what they need, reach relevant approved suppliers, compare quotations, and choose how to proceed."
-    cards={[
-      { title: "Start with the item", description: "Name the product and category, say how many you need, and include useful specifications." },
-      { title: "Set your place and timing", description: "Choose a city, pickup or delivery preference, and the urgency that fits your business." },
-      { title: "Compare supplier offers", description: "Review offered quantity, price, delivery availability and preparation estimates." },
-      { title: "Choose the next step", description: "Accept an offer to create an order. Payment and delivery availability depend on configured services." },
-    ]}
-    sections={[
-      { heading: "An urgency choice is a preference", paragraphs: ["A buyer’s timing selection helps suppliers understand the request. It does not guarantee that stock or delivery will be available within that time. Suppliers confirm availability and their own preparation estimates in each quotation."] },
-      { heading: "Supplier approval comes first", paragraphs: ["Businesses apply to join and remain pending until an administrator verifies them. Public stock discovery and SOS matching are limited to approved suppliers."] },
-    ]}
-    action={{ label: "Create an SOS request", href: "/sos" }}
-  />;
+  return <>
+    <section className="page-hero"><div className="page-container"><span className="eyebrow"><CheckCircle2 size={14} /> Before you sign up</span><h1>See what StockSOS can do for your business.</h1><p className="lead">Whether you are searching for stock or selling it, StockSOS helps you take the next step with verified suppliers, real inventory and clear choices.</p><div className="hero-buttons"><Link className="button button-primary" href="/register">Create a buyer account <ArrowUpRight size={16} /></Link><Link className="button button-secondary" href="/become-supplier">Apply as a supplier <ArrowRight size={16} /></Link></div></div></section>
+    <section className="section"><div className="page-container"><div className="section-heading"><span className="eyebrow">For businesses buying stock</span><h2>From urgent need to a clear supply option.</h2><p className="lead">You stay in control: StockSOS prepares the request, suppliers send their real offers, and you decide whether to proceed.</p></div><div className="workflow-grid">{buyerSteps.map((step, index) => { const Icon = step.icon; return <article className="workflow-card" key={step.title}><div className="workflow-number">0{index + 1}</div><span className="feature-icon"><Icon size={20} /></span><h3>{step.title}</h3><p>{step.copy}</p></article>; })}</div><div className="flow-action"><Link className="button button-secondary" href="/find-stock">Browse available stock <ArrowRight size={16} /></Link><Link className="text-link" href="/sos">Or start an SOS request <ArrowRight size={14} /></Link></div></div></section>
+    <section className="section surface"><div className="page-container"><div className="section-heading"><span className="eyebrow">For suppliers selling stock</span><h2>Turn accurate inventory into more discovery opportunities.</h2><p className="lead">Supplier pages and product links help buyers understand your stock before they contact you. External distribution comes only through approved connections.</p></div><div className="workflow-grid">{supplierSteps.map((step, index) => { const Icon = step.icon; return <article className="workflow-card" key={step.title}><div className="workflow-number">0{index + 1}</div><span className="feature-icon"><Icon size={20} /></span><h3>{step.title}</h3><p>{step.copy}</p></article>; })}</div><div className="flow-action"><Link className="button button-primary" href="/become-supplier">Start a supplier application <ArrowUpRight size={16} /></Link><Link className="text-link" href="/supplier/reach">View StockSOS Reach <ArrowRight size={14} /></Link></div></div></section>
+    <section className="section" id="reach"><div className="page-container reach-explainer"><div><span className="eyebrow"><Globe2 size={14} /> StockSOS Reach</span><h2>Discovery tools that stay truthful.</h2><p className="lead">Reach helps verified suppliers create public storefronts and product pages today, then connect approved marketing channels as those accounts are authorized and verified.</p></div><div className="reach-explainer-points"><p><BadgeCheck size={17} /> Public pages show only approved, available inventory.</p><p><BarChart3 size={17} /> Analytics show only real metrics reported by connected channels.</p><p><ShieldCheck size={17} /> Suppliers review content and explicitly approve any paid campaign.</p></div></div></section>
+    <section className="band"><div className="page-container band-inner"><div><h2>StockSOS is built for the moment stock becomes business-critical.</h2><p>Find supply, publish your inventory and grow your business with clearer information.</p></div><Link className="button button-primary" href="/register">Get started <ArrowUpRight size={16} /></Link></div></section>
+  </>;
 }

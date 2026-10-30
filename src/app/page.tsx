@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
-  ArrowRight, ArrowUpRight, BadgeCheck, Boxes, Building2, Clock3,
-  MapPin, PackageSearch, ShieldCheck, Truck, Zap,
+  ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2, Clock3,
+  Globe2, MapPin, Megaphone, PackageSearch, ShieldCheck, Truck, Zap,
 } from "lucide-react";
 
 const steps = [
@@ -96,6 +96,24 @@ export default function HomePage() {
             <article className="feature-card"><span className="feature-icon"><PackageSearch size={20} /></span><h3>For buyers</h3><p>Post a specific request, receive supplier quotations, compare the terms, then choose whether to proceed.</p><Link className="text-link" href="/sos">Create an SOS request <ArrowRight size={15} /></Link></article>
             <article className="feature-card"><span className="feature-icon"><Building2 size={20} /></span><h3>For suppliers</h3><p>List available stock, respond to matching requests and manage quotations and orders from one workspace.</p><Link className="text-link" href="/become-supplier">Apply to supply <ArrowRight size={15} /></Link></article>
             <article className="feature-card"><span className="feature-icon"><Zap size={20} /></span><h3>For local merchants</h3><p>Share a business profile through SOS Link and ask the network to help source items you do not carry.</p><Link className="text-link" href="/how-it-works">See how it works <ArrowRight size={15} /></Link></article>
+          </div>
+        </div>
+      </section>
+
+      <section className="section reach-home-section">
+        <div className="page-container reach-home-grid">
+          <div>
+            <span className="eyebrow"><Globe2 size={14} /> StockSOS Reach for suppliers</span>
+            <h2>Upload once. Get discovered in more places.</h2>
+            <p className="lead">StockSOS Reach gives verified suppliers a public storefront, permanent product pages and a clear path toward search discovery, social promotion and eligible distribution channels.</p>
+            <div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">Start selling with StockSOS <ArrowUpRight size={16} /></Link><Link className="button button-secondary" href="/how-it-works#reach">Explore supplier growth <ArrowRight size={16} /></Link></div>
+            <p className="form-hint">No sales, traffic or advertising results are promised. External publishing requires supplier approval and channel eligibility.</p>
+          </div>
+          <div className="reach-home-preview" aria-label="StockSOS Reach feature overview">
+            <div className="reach-preview-head"><span className="pill pill-green"><BadgeCheck size={12} /> Verified supplier</span><strong>Reach workspace</strong></div>
+            <div className="reach-preview-row"><span className="feature-icon"><PackageSearch size={18} /></span><div><strong>Public product pages</strong><small>Search-ready links for eligible inventory</small></div><span className="pill pill-green">Live</span></div>
+            <div className="reach-preview-row"><span className="feature-icon"><Megaphone size={18} /></span><div><strong>Promotion workspace</strong><small>Prepare accurate product messaging</small></div><span className="pill">Review first</span></div>
+            <div className="reach-preview-row"><span className="feature-icon"><BarChart3 size={18} /></span><div><strong>Clear performance data</strong><small>Only verified channel metrics are shown</small></div><span className="pill">No estimates</span></div>
           </div>
         </div>
       </section>
