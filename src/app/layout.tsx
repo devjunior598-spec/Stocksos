@@ -3,6 +3,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://stocksos.ng"),
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <SiteHeader />
+        <ProfileCompletionBanner />
         <main>{children}</main>
         <MobileBottomNav />
         <SiteFooter />

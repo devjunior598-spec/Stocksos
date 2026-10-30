@@ -38,6 +38,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 3px;
 }
 main { min-height: 55vh; background: #fcfbf7; }
+.profile-completion-banner { width: min(1060px, calc(100% - 40px)); display: flex; align-items: center; gap: 11px; margin: 12px auto 0; padding: 10px 12px; color: #3d5a4c; background: #edf6ed; border: 1px solid #d3e7d4; border-radius: 12px; }
+.profile-completion-icon { width: 28px; height: 28px; display: grid; place-items: center; flex: 0 0 auto; color: var(--green); background: #dcefdc; border-radius: 50%; }
+.profile-completion-copy { min-width: 0; flex: 1; }
+.profile-completion-copy strong, .profile-completion-copy span { display: block; }
+.profile-completion-copy strong { color: #234c3b; font-size: 12px; }
+.profile-completion-copy span { margin-top: 2px; overflow: hidden; color: #5b7568; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.profile-completion-link { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; color: var(--blue); font-size: 11px; font-weight: 750; }
 
 .site-header {
   height: 78px;
@@ -289,6 +296,9 @@ h3 { font-size: 18px; line-height: 1.3; margin-bottom: 9px; font-weight: 720; }
   .catalog-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 700px) {
+  .profile-completion-banner { width: min(100% - 28px, 560px); align-items: flex-start; margin-top: 9px; }
+  .profile-completion-link { padding-top: 3px; }
+  .profile-completion-copy span { white-space: normal; }
   .site-header { height: 66px; }
   .header-inner, .page-container, .footer-main, .footer-bottom { width: min(100% - 36px, 560px); }
   .primary-nav, .header-actions { display: none; }
