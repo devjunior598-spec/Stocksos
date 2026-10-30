@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
-  ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2, Clock3,
-  Globe2, MapPin, Megaphone, PackageSearch, ShieldCheck, Truck, Zap,
+  ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2,
+  Globe2, Megaphone, PackageSearch, ShieldCheck, Truck, Zap,
 } from "lucide-react";
 
 const steps = [
@@ -17,50 +17,68 @@ export default function HomePage() {
       <section className="hero">
         <div className="page-container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow"><span className="status-dot" />Business stock, within reach</span>
-            <h1>Your next supply.<br /><span className="highlight">Within reach.</span></h1>
-            <p className="lead">Find available stock, connect with suppliers, and keep business moving. One place to turn an urgent need into your next opportunity.</p>
+            <span className="eyebrow"><span className="status-dot" />Source stock. Promote products. Reach customers.</span>
+            <h1>Find what you need.<br /><span className="highlight">Promote what you sell.</span></h1>
+            <p className="lead">StockSOS is a global sourcing and product-promotion platform. Buyers find available stock, while approved suppliers list, promote and advertise their products to reach more customers.</p>
             <form className="hero-stock-search" action="/find-stock">
               <label htmlFor="hero-query">What are you looking for?</label>
               <div><PackageSearch size={22} aria-hidden="true" /><input id="hero-query" name="q" placeholder="Search products, brands, materials…" maxLength={80} /><button type="submit" className="button button-primary">Find stock <ArrowRight size={17} /></button></div>
             </form>
             <div className="hero-buttons">
               <Link className="button button-primary" href="/sos">Send an SOS <ArrowUpRight size={16} /></Link>
-              <Link className="button button-secondary" href="/become-supplier">Become a supplier <ArrowRight size={16} /></Link>
+              <Link className="button button-secondary" href="/become-supplier"><Megaphone size={16} /> Promote your products</Link>
             </div>
             <div className="hero-trust">
-              <span className="trust-item"><ShieldCheck size={15} /> Supplier approval process</span>
-              <span className="trust-item"><MapPin size={15} /> Connect across locations</span>
-              <span className="trust-item"><Clock3 size={15} /> Urgency is your preference</span>
+              <span className="trust-item"><PackageSearch size={15} /> Buyer product discovery</span>
+              <span className="trust-item"><Megaphone size={15} /> Promotion and advertising tools</span>
+              <span className="trust-item"><ShieldCheck size={15} /> Approved supplier accounts</span>
             </div>
           </div>
-          <div className="hero-visual" aria-label="Illustration of the StockSOS sourcing flow">
+          <div className="hero-visual" aria-label="Illustration of StockSOS product promotion and discovery">
             <div className="hero-glow" />
-            <div className="float-note float-note-top"><BadgeCheck size={17} /> Verified businesses</div>
+            <div className="float-note float-note-top"><Megaphone size={17} /> Promote &amp; advertise products</div>
             <div className="request-card">
-              <div className="request-top"><span className="request-kicker">Sourcing flow</span><span className="pill">Request to offer</span></div>
+              <div className="request-top"><span className="request-kicker">Supplier growth</span><span className="pill pill-green">Reach workspace</span></div>
               <div className="request-product">
-                <div className="product-emblem"><PackageSearch size={22} /></div>
-                <div><h3>Tell suppliers what you need</h3><p>Product · quantity · location · urgency</p></div>
+                <div className="product-emblem"><Globe2 size={22} /></div>
+                <div><h3>Put your products in front of buyers</h3><p>Listings · discovery · promotion · enquiries</p></div>
               </div>
               <div className="match-list">
-                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Building2 size={16} /></span><div><strong>Relevant suppliers</strong><small>Matched by category and city</small></div></div><BadgeCheck size={16} color="#16845b" /></div>
-                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Boxes size={16} /></span><div><strong>Comparable quotations</strong><small>Price, stock and delivery details</small></div></div><ArrowRight size={16} color="#246bfe" /></div>
-                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Truck size={16} /></span><div><strong>Buyer chooses next step</strong><small>Pickup or an arranged delivery</small></div></div><ShieldCheck size={16} color="#16845b" /></div>
+                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Building2 size={16} /></span><div><strong>Public business storefront</strong><small>Give customers a trusted place to discover you</small></div></div><BadgeCheck size={16} color="#16845b" /></div>
+                <div className="match-row"><div className="match-business"><span className="mini-avatar"><PackageSearch size={16} /></span><div><strong>Search-ready product listings</strong><small>Show accurate inventory to relevant buyers</small></div></div><ArrowRight size={16} color="#087f71" /></div>
+                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Megaphone size={16} /></span><div><strong>Promotion with your approval</strong><small>Prepare campaigns for eligible channels</small></div></div><BarChart3 size={16} color="#16845b" /></div>
               </div>
-              <p className="metric-note"><Clock3 size={13} /> Delivery times are supplier estimates, not guarantees.</p>
+              <p className="metric-note"><ShieldCheck size={13} /> You review promotional content before external publishing.</p>
             </div>
-            <div className="float-note float-note-bottom"><Zap size={16} /> Built for business continuity</div>
+            <div className="float-note float-note-bottom"><Zap size={16} /> Turn inventory into customer opportunities</div>
           </div>
         </div>
       </section>
 
       <section className="proof-strip">
         <div className="page-container proof-inner">
-          <span><ShieldCheck size={16} /> Verified supplier onboarding</span>
-          <span><MapPin size={16} /> Location-aware sourcing</span>
-          <span><Boxes size={16} /> Buyer and supplier accounts</span>
-          <span><BadgeCheck size={16} /> Offers before purchase</span>
+          <span><Megaphone size={16} /> Product promotion tools</span>
+          <span><Globe2 size={16} /> Public supplier storefronts</span>
+          <span><PackageSearch size={16} /> Buyer product discovery</span>
+          <span><BadgeCheck size={16} /> Approved supplier accounts</span>
+        </div>
+      </section>
+
+      <section className="section reach-home-section">
+        <div className="page-container reach-home-grid">
+          <div>
+            <span className="eyebrow"><Globe2 size={14} /> StockSOS Reach for suppliers</span>
+            <h2>Promote and advertise your products to more customers.</h2>
+            <p className="lead">Create a public storefront, publish accurate product listings and prepare promotional campaigns from one supplier workspace. StockSOS helps your inventory appear where buyers are already searching and requesting stock.</p>
+            <div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">Promote my products <ArrowUpRight size={16} /></Link><Link className="button button-secondary" href="/how-it-works#reach">See how promotion works <ArrowRight size={16} /></Link></div>
+            <p className="form-hint">You approve promotional content before external publishing. Channel eligibility applies, and StockSOS does not promise specific sales, traffic or advertising results.</p>
+          </div>
+          <div className="reach-home-preview" aria-label="StockSOS Reach product promotion overview">
+            <div className="reach-preview-head"><span className="pill pill-green"><BadgeCheck size={12} /> Approved supplier</span><strong>Product visibility</strong></div>
+            <div className="reach-preview-row"><span className="feature-icon"><PackageSearch size={18} /></span><div><strong>Search-ready product pages</strong><small>Help buyers discover available inventory</small></div><span className="pill pill-green">Visible</span></div>
+            <div className="reach-preview-row"><span className="feature-icon"><Megaphone size={18} /></span><div><strong>Promotion and advertising</strong><small>Prepare accurate messaging for eligible channels</small></div><span className="pill">Your approval</span></div>
+            <div className="reach-preview-row"><span className="feature-icon"><BarChart3 size={18} /></span><div><strong>Verified performance data</strong><small>See real channel results when available</small></div><span className="pill">No estimates</span></div>
+          </div>
         </div>
       </section>
 
@@ -96,24 +114,6 @@ export default function HomePage() {
             <article className="feature-card"><span className="feature-icon"><PackageSearch size={20} /></span><h3>For buyers</h3><p>Post a specific request, receive supplier quotations, compare the terms, then choose whether to proceed.</p><Link className="text-link" href="/sos">Create an SOS request <ArrowRight size={15} /></Link></article>
             <article className="feature-card"><span className="feature-icon"><Building2 size={20} /></span><h3>For suppliers</h3><p>List available stock, respond to matching requests and manage quotations and orders from one workspace.</p><Link className="text-link" href="/become-supplier">Apply to supply <ArrowRight size={15} /></Link></article>
             <article className="feature-card"><span className="feature-icon"><Zap size={20} /></span><h3>For local merchants</h3><p>Share a business profile through SOS Link and ask the network to help source items you do not carry.</p><Link className="text-link" href="/how-it-works">See how it works <ArrowRight size={15} /></Link></article>
-          </div>
-        </div>
-      </section>
-
-      <section className="section reach-home-section">
-        <div className="page-container reach-home-grid">
-          <div>
-            <span className="eyebrow"><Globe2 size={14} /> StockSOS Reach for suppliers</span>
-            <h2>Upload once. Get discovered in more places.</h2>
-            <p className="lead">StockSOS Reach gives verified suppliers a public storefront, permanent product pages and a clear path toward search discovery, social promotion and eligible distribution channels.</p>
-            <div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">Start selling with StockSOS <ArrowUpRight size={16} /></Link><Link className="button button-secondary" href="/how-it-works#reach">Explore supplier growth <ArrowRight size={16} /></Link></div>
-            <p className="form-hint">No sales, traffic or advertising results are promised. External publishing requires supplier approval and channel eligibility.</p>
-          </div>
-          <div className="reach-home-preview" aria-label="StockSOS Reach feature overview">
-            <div className="reach-preview-head"><span className="pill pill-green"><BadgeCheck size={12} /> Verified supplier</span><strong>Reach workspace</strong></div>
-            <div className="reach-preview-row"><span className="feature-icon"><PackageSearch size={18} /></span><div><strong>Public product pages</strong><small>Search-ready links for eligible inventory</small></div><span className="pill pill-green">Live</span></div>
-            <div className="reach-preview-row"><span className="feature-icon"><Megaphone size={18} /></span><div><strong>Promotion workspace</strong><small>Prepare accurate product messaging</small></div><span className="pill">Review first</span></div>
-            <div className="reach-preview-row"><span className="feature-icon"><BarChart3 size={18} /></span><div><strong>Clear performance data</strong><small>Only verified channel metrics are shown</small></div><span className="pill">No estimates</span></div>
           </div>
         </div>
       </section>
