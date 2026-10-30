@@ -1,8 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2,
   Globe2, Megaphone, PackageSearch, ShieldCheck, Truck, Zap,
 } from "lucide-react";
+import { formatMoney, getMarketplaceImageUrl, getProductsResult } from "@/lib/data";
+
+export const dynamic = "force-dynamic";
 
 const steps = [
   { number: "01", icon: PackageSearch, title: "Tell us what’s missing", copy: "Describe the item, quantity, location and how soon you need it." },
@@ -36,7 +40,9 @@ function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { products: latestProducts, error: productFeedError } = await getProductsResult(undefined, undefined, 8);
+
   return (
     <>
       <section className="hero">
@@ -86,6 +92,37 @@ export default function HomePage() {
           <span><Globe2 size={16} /> Public supplier storefronts</span>
           <span><PackageSearch size={16} /> Buyer product discovery</span>
           <span><BadgeCheck size={16} /> Approved supplier accounts</span>
+        </div>
+      </section>
+
+      <section className="section home-product-showcase" aria-labelledby="latest-products-title">
+        <div className="page-container">
+          <div className="home-product-heading">
+            <div className="section-heading">
+              <span className="eyebrow"><PackageSearch size={14} /> Live supplier inventory</span>
+              <h2 id="latest-products-title">Discover products available now.</h2>
+              <p className="lead">New public listings appear here automatically after the supplier is approved and the product has available stock.</p>
+            </div>
+            <Link className="button button-secondary" href="/find-stock">Browse all products <ArrowRight size={16} /></Link>
+          </div>
+          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : latestProducts.length ? <div className="catalog-grid home-product-grid">{latestProducts.map((product) => {
+            const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
+            const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;
+            const imageUrl = getMarketplaceImageUrl(product.image_path);
+            return <article className="product-card home-product-card" key={product.id}>
+              <Link className="product-placeholder" href={`/product/${product.id}`} aria-label={`View ${product.name}`}>
+                {imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 50vw, (max-width: 1050px) 33vw, 25vw" className="product-image" /> : <PackageSearch size={34} />}
+              </Link>
+              <div className="product-detail">
+                <div className="product-card-badges"><span className="pill pill-green"><BadgeCheck size={11} /> Approved</span><span className="pill">{product.condition}</span></div>
+                <h3><Link href={`/product/${product.id}`}>{product.name}</Link></h3>
+                <p>{business?.name ?? "Approved supplier"}</p>
+                <p>{[business?.city, business?.country].filter(Boolean).join(", ") || "Worldwide listing"}</p>
+                <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}</div>
+                <div className="home-product-meta"><span>{stock ? `${stock.quantity_available} available` : "Check availability"}</span><Link className="text-link" href={`/product/${product.id}`}>View <ArrowRight size={13} /></Link></div>
+              </div>
+            </article>;
+          })}</div> : <div className="empty-state home-product-empty"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>Supplier products will appear here</h3><p>StockSOS only displays real, available inventory from approved suppliers. The first eligible listings will publish here automatically.</p><div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">List products as a supplier <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/sos">Request a product</Link></div></div>}
         </div>
       </section>
 

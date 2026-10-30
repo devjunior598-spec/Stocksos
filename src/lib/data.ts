@@ -35,6 +35,7 @@ export async function getProducts(
 export async function getProductsResult(
   search?: string,
   filters?: { categoryId?: string; country?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
+  limit = 40,
 ): Promise<ProductQueryResult> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { products: [], error: "Supabase is not configured for this deployment." };
@@ -45,7 +46,8 @@ export async function getProductsResult(
     .gt("inventory.quantity_available", 0)
     .eq("businesses.verification_status", "approved")
     .eq("businesses.visibility", "public")
-    .limit(40);
+    .order("created_at", { ascending: false })
+    .limit(Math.min(Math.max(Math.trunc(limit), 1), 40));
   const safeSearch = search?.trim().replace(/[^a-z0-9\s-]/gi, "").slice(0, 80);
   if (safeSearch) query = query.or("name.ilike.%" + safeSearch + "%,brand.ilike.%" + safeSearch + "%,specifications.ilike.%" + safeSearch + "%");
   if (filters?.categoryId) query = query.eq("category_id", filters.categoryId);
