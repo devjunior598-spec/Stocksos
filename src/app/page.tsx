@@ -11,6 +11,31 @@ const steps = [
   { number: "04", icon: Truck, title: "Choose how to fulfil", copy: "Accept an offer, pay securely when enabled, then follow the order status." },
 ];
 
+const promotionChannels = [
+  { name: "Instagram", mark: "◎", className: "instagram" },
+  { name: "TikTok", mark: "♪", className: "tiktok" },
+  { name: "Facebook", mark: "f", className: "facebook" },
+  { name: "YouTube", mark: "▶", className: "youtube" },
+  { name: "Google", mark: "G", className: "google" },
+  { name: "LinkedIn", mark: "in", className: "linkedin" },
+  { name: "X", mark: "X", className: "x" },
+  { name: "Pinterest", mark: "P", className: "pinterest" },
+  { name: "WhatsApp", mark: "◉", className: "whatsapp" },
+];
+
+function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
+  return (
+    <div className="promotion-channel-group" role={duplicate ? undefined : "list"} aria-hidden={duplicate || undefined}>
+      {promotionChannels.map((channel) => (
+        <div className="promotion-channel" role={duplicate ? undefined : "listitem"} key={channel.name}>
+          <span className={`promotion-channel-mark channel-${channel.className}`} aria-hidden="true">{channel.mark}</span>
+          <span><strong>{channel.name}</strong><small>Promotion channel</small></span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
     <>
@@ -61,6 +86,22 @@ export default function HomePage() {
           <span><Globe2 size={16} /> Public supplier storefronts</span>
           <span><PackageSearch size={16} /> Buyer product discovery</span>
           <span><BadgeCheck size={16} /> Approved supplier accounts</span>
+        </div>
+      </section>
+
+      <section className="promotion-channel-strip" aria-labelledby="promotion-channels-title">
+        <div className="page-container promotion-channel-heading">
+          <div>
+            <span className="eyebrow"><Megaphone size={14} /> Built for multi-channel promotion</span>
+            <h2 id="promotion-channels-title">Show your products where customers spend time.</h2>
+          </div>
+          <p>Prepare product content for leading social, search and messaging channels. Each channel becomes available after setup, supplier approval and eligibility review.</p>
+        </div>
+        <div className="promotion-channel-marquee" aria-label="Planned promotion channels">
+          <div className="promotion-channel-track">
+            <PromotionChannelGroup />
+            <PromotionChannelGroup duplicate />
+          </div>
         </div>
       </section>
 

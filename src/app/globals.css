@@ -665,6 +665,38 @@ body:has(.admin-console) { padding-bottom: 0; }
 .float-note-bottom { left: 18px; bottom: -14px; }
 .proof-strip { background: #fcfbf7; border-color: var(--line); }
 .proof-inner { color: #526963; }
+.promotion-channel-strip { overflow: hidden; padding: 42px 0 38px; color: #fff; background: #193d34; }
+.promotion-channel-heading { display: grid; grid-template-columns: 1fr .8fr; align-items: end; gap: 50px; margin-bottom: 26px; }
+.promotion-channel-heading .eyebrow { margin-bottom: 10px; color: #a9e4c4; }
+.promotion-channel-heading h2 { max-width: 650px; margin: 0; color: #fff; font-size: clamp(27px, 3.2vw, 40px); }
+.promotion-channel-heading > p { max-width: 520px; margin: 0; color: #c7d9cf; font-size: 13px; line-height: 1.7; }
+.promotion-channel-marquee {
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.promotion-channel-track { display: flex; width: max-content; animation: promotion-channel-scroll 34s linear infinite; }
+.promotion-channel-marquee:hover .promotion-channel-track { animation-play-state: paused; }
+.promotion-channel-group { display: flex; gap: 12px; padding-right: 12px; }
+.promotion-channel {
+  min-width: 192px; display: flex; align-items: center; gap: 11px; padding: 12px 15px;
+  color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 17px;
+}
+.promotion-channel-mark { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; color: #fff; background: #315b50; border-radius: 12px; font-size: 16px; font-weight: 850; }
+.promotion-channel strong, .promotion-channel small { display: block; }
+.promotion-channel strong { color: #fff; font-size: 13px; }
+.promotion-channel small { margin-top: 2px; color: #afc8bd; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+.channel-instagram { background: linear-gradient(135deg, #7c3aed, #e11d48, #f59e0b); }
+.channel-tiktok { color: #fff; background: #101214; text-shadow: 2px 0 #ef426f, -2px 0 #25f4ee; }
+.channel-facebook { background: #1877f2; }
+.channel-youtube { background: #ff0033; }
+.channel-google { color: #4285f4; background: #fff; }
+.channel-linkedin { background: #0a66c2; font-size: 12px; }
+.channel-x { color: #fff; background: #050505; }
+.channel-pinterest { background: #e60023; }
+.channel-whatsapp { background: #20b968; }
+@keyframes promotion-channel-scroll { to { transform: translateX(-50%); } }
 .workflow-card { background: #f0f3eb; border: 1px solid #e0e6d9; border-radius: 22px; }
 .workflow-number { color: #50695b; font-size: 14px; }
 .feature-card, .panel, .stat-card, .product-card, .auth-panel { border-color: var(--line); border-radius: 22px; box-shadow: 0 8px 28px #213d3406; }
@@ -697,6 +729,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 900px) {
   .hero-grid { gap: 28px; }
   .reach-home-grid, .reach-explainer { gap: 34px; }
+  .promotion-channel-heading { grid-template-columns: 1fr; gap: 12px; }
   .hero-stock-search > div { flex-wrap: wrap; }
   .hero-stock-search .button { width: 100%; }
 }
@@ -709,6 +742,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .hero-buttons .button { flex: 1 1 180px; }
   .form-field input, .form-field select, .form-field textarea { font-size: 16px; }
   .proof-inner { gap: 16px 22px; }
+  .promotion-channel-strip { padding: 34px 0 30px; }
+  .promotion-channel-heading { margin-bottom: 20px; }
+  .promotion-channel-heading h2 { font-size: 28px; }
+  .promotion-channel-heading > p { font-size: 12px; }
+  .promotion-channel { min-width: 166px; padding: 10px 12px; border-radius: 14px; }
+  .promotion-channel-mark { width: 34px; height: 34px; border-radius: 10px; }
+  .promotion-channel-track { animation-duration: 27s; }
   .reach-home-grid, .reach-explainer { grid-template-columns: 1fr; gap: 26px; }
   .reach-home-preview { padding: 15px; border-radius: 18px; }
   .flow-action { align-items: stretch; flex-direction: column; margin-top: 24px; }
@@ -770,4 +810,10 @@ h2 { font-size: clamp(27px, 3.2vw, 38px); margin-bottom: 12px; }
   .form-panel { margin: 18px auto 46px; }
   .dashboard-shell { padding: 30px 0 52px; }
   .account-role-picker { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promotion-channel-marquee { overflow-x: auto; mask-image: none; -webkit-mask-image: none; }
+  .promotion-channel-track { animation: none !important; }
+  .promotion-channel-group[aria-hidden="true"] { display: none; }
 }
