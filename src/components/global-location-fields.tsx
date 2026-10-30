@@ -18,7 +18,7 @@ export function GlobalLocationFields({ defaults = {}, includeAddress = true, des
   description?: string;
 }) {
   const countries = useMemo(() => Country.getAllCountries().map(({ isoCode, name }) => ({ code: isoCode, name })).sort((a, b) => a.name.localeCompare(b.name)), []);
-  const initialCountry = defaults.country && countries.some(({ code }) => code === defaults.country) ? defaults.country : "US";
+  const initialCountry = defaults.country && countries.some(({ code }) => code === defaults.country) ? defaults.country : "";
   const [country, setCountry] = useState(initialCountry);
   const [region, setRegion] = useState(defaults.region ?? "");
   const regionOptions = useMemo(() => State.getStatesOfCountry(country).map(({ name }) => name).sort((a, b) => a.localeCompare(b)), [country]);
