@@ -18,15 +18,19 @@ export default function HomePage() {
         <div className="page-container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow"><span className="status-dot" />Business stock, within reach</span>
-            <h1>Keep your business moving when <span className="highlight">stock runs out.</span></h1>
-            <p className="lead">Find the stock you need. Sell the stock you have. Rescue your business in minutes with one network for urgent sourcing and local supply.</p>
+            <h1>Your next supply.<br /><span className="highlight">Within reach.</span></h1>
+            <p className="lead">Find available stock, connect with suppliers, and keep business moving. One place to turn an urgent need into your next opportunity.</p>
+            <form className="hero-stock-search" action="/find-stock">
+              <label htmlFor="hero-query">What are you looking for?</label>
+              <div><PackageSearch size={22} aria-hidden="true" /><input id="hero-query" name="q" placeholder="Search products, brands, materials…" maxLength={80} /><button type="submit" className="button button-primary">Find stock <ArrowRight size={17} /></button></div>
+            </form>
             <div className="hero-buttons">
               <Link className="button button-primary" href="/sos">Send an SOS <ArrowUpRight size={16} /></Link>
               <Link className="button button-secondary" href="/become-supplier">Become a supplier <ArrowRight size={16} /></Link>
             </div>
             <div className="hero-trust">
               <span className="trust-item"><ShieldCheck size={15} /> Supplier approval process</span>
-              <span className="trust-item"><MapPin size={15} /> Starting in Ibadan</span>
+              <span className="trust-item"><MapPin size={15} /> Connect across locations</span>
               <span className="trust-item"><Clock3 size={15} /> Urgency is your preference</span>
             </div>
           </div>

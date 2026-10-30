@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
+/* Shared marketplace visual identity. */
+
 :root {
-  --navy: #101b37;
-  --navy-soft: #1b2949;
-  --blue: #246bfe;
-  --blue-dark: #1251d5;
-  --blue-pale: #edf3ff;
-  --ink: #17223b;
-  --muted: #71809a;
-  --line: #e5e9f1;
-  --surface: #f6f8fc;
+  --navy: #182d2b;
+  --navy-soft: #294541;
+  --blue: #087f71;
+  --blue-dark: #056457;
+  --blue-pale: #e7f3ef;
+  --ink: #203632;
+  --muted: #60736e;
+  --line: #dce4de;
+  --surface: #f2f4ee;
   --white: #fff;
   --green: #16845b;
   --orange: #ef8c2f;
@@ -35,7 +37,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline: 3px solid rgba(36, 107, 254, .35);
   outline-offset: 3px;
 }
-main { min-height: 55vh; }
+main { min-height: 55vh; background: #fcfbf7; }
 
 .site-header {
   height: 78px;
@@ -499,3 +501,60 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 .saved-location { display: flex; align-items: center; gap: 5px; }
 .saved-supplier-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
 .quote-cost-note { margin-top: 4px; color: #8490a3; font-size: 10px; }
+
+/* Ivory / evergreen redesign: shared surfaces and responsive discovery layout. */
+.site-header { background: rgba(252,251,247,.96); border-color: var(--line); }
+.brand-mark { border-radius: 50%; box-shadow: none; }
+.primary-nav a { padding: 9px 0; }
+.button { border-radius: 99px; box-shadow: none; }
+.button-primary:hover { box-shadow: 0 6px 18px rgba(8,127,113,.14); }
+.button-secondary { border-color: #cddbd4; }
+.hero { background: #f3f4ec; padding: 82px 0 70px; }
+.hero-grid { grid-template-columns: 1.15fr .85fr; gap: 48px; }
+.hero h1 { font-size: clamp(44px, 5.5vw, 76px); letter-spacing: -.055em; line-height: 1.04; }
+.hero .eyebrow { margin-bottom: 24px; }
+.hero-copy .lead { color: #526963; font-size: 17px; }
+.hero-stock-search { margin: 28px 0 24px; }
+.hero-stock-search label { display: block; margin-bottom: 10px; font-size: 12px; font-weight: 750; }
+.hero-stock-search > div { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 18px; background: #fff; border: 1px solid #cedbd2; border-radius: 20px; box-shadow: 0 10px 32px #213d3410; }
+.hero-stock-search input { flex: 1; width: 100%; min-width: 0; border: 0; background: transparent; padding: 12px 0; font-size: 16px; }
+.hero-stock-search .button { flex-shrink: 0; }
+.hero-trust { color: #526963; gap: 12px; }
+.hero-visual { border-radius: 36px; background: #dce8d9; min-height: 460px; padding: 24px; }
+.hero-glow { width: 230px; height: 230px; right: 0; top: 0; background: #e7edaf; border-radius: 0 36px 0 100%; }
+.request-card { transform: none; border-radius: 24px; border-color: #d3dfd4; box-shadow: 0 24px 48px #203b3114; }
+.request-product { background: #f1f5ed; border-color: #e1e9dc; }
+.product-emblem, .mini-avatar { background: #e5eee2; color: #087466; }
+.float-note { border-radius: 99px; border-color: #d7e1d4; }
+.float-note-top { right: 18px; top: -14px; }
+.float-note-bottom { left: 18px; bottom: -14px; }
+.proof-strip { background: #fcfbf7; border-color: var(--line); }
+.proof-inner { color: #526963; }
+.workflow-card { background: #f0f3eb; border: 1px solid #e0e6d9; border-radius: 22px; }
+.workflow-number { color: #50695b; font-size: 14px; }
+.feature-card, .panel, .stat-card, .product-card, .auth-panel { border-color: var(--line); border-radius: 22px; box-shadow: 0 8px 28px #213d3406; }
+.feature-icon { border-radius: 50%; }
+.page-hero { background: #f1f4ec; border-bottom: 1px solid var(--line); }
+.page-hero h1 { max-width: 850px; }
+.site-footer { background: #eaf0e5; border-color: #d6e0d0; }
+.footer-brand p, .footer-location, .footer-links a, .footer-bottom { color: #53685e; }
+.footer-links h3 { color: #263d32; }
+.band { background: #193d34; }
+.band p { color: #d1e1d5; }
+.form-field input, .form-field select, .form-field textarea, .voice-field-row input { border-radius: 12px; border: 1px solid #cfdcd4; background: #fff; padding: 12px 14px; min-height: 48px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline-color: #087f7190; }
+@media (max-width: 900px) {
+  .hero-grid { gap: 28px; }
+  .hero-stock-search > div { flex-wrap: wrap; }
+  .hero-stock-search .button { width: 100%; }
+}
+@media (max-width: 700px) {
+  .hero { padding: 42px 0 48px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .hero h1 { font-size: clamp(40px, 11vw, 60px); }
+  .hero-visual { min-height: 365px; padding: 18px; border-radius: 26px; }
+  .hero-stock-search input { font-size: 16px; }
+  .hero-buttons .button { flex: 1 1 180px; }
+  .form-field input, .form-field select, .form-field textarea { font-size: 16px; }
+  .proof-inner { gap: 16px 22px; }
+}
