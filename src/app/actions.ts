@@ -141,7 +141,9 @@ export async function saveOnboardingAction(formData: FormData) {
 }
 
 export async function createBusinessApplicationAction(formData: FormData) {
-  await requireSupplier();
+  // New supplier accounts are pending until their business is reviewed, but
+  // they must be able to submit the business application that starts review.
+  await requireSupplier({ allowPending: true });
   const parsed = z.object({
     name: z.string().trim().min(2).max(120),
     slug: z.string().trim().min(2).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -187,7 +189,8 @@ export async function createBusinessApplicationAction(formData: FormData) {
   });
   if (error) redirect(error.code === "23505" ? "/become-supplier?error=slug" : "/become-supplier?error=save");
   revalidatePath("/supplier");
-  redirect("/supplier?applied=1");
+  revalidatePath("/become-supplier");
+  redirect("/become-supplier?applied=1");
 }
 
 export async function createSOSAction(formData: FormData) {

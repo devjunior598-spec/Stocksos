@@ -44,7 +44,7 @@ export async function getAccountHome(userId: string) {
   return await getMarketplaceRole(userId) === "supplier" ? "/supplier" : "/dashboard";
 }
 
-export async function requireUser(options: { allowAdmin?: boolean; redirectTo?: string } = {}) {
+export async function requireUser(options: { allowAdmin?: boolean; allowPending?: boolean; redirectTo?: string } = {}) {
   const user = await getAuthenticatedUser();
   if (!user) {
     const configured = Boolean(
@@ -57,7 +57,7 @@ export async function requireUser(options: { allowAdmin?: boolean; redirectTo?: 
   if (platformRole !== "admin") {
     const accountStatus = await getAccountStatus(user.id);
     // A null status keeps rolling deployments compatible until the migration is applied.
-    if (accountStatus && accountStatus !== "approved") redirect("/account-status");
+    if (accountStatus && accountStatus !== "approved" && !options.allowPending) redirect("/account-status");
   }
   if (!options.allowAdmin && platformRole === "admin") redirect("/admin");
   return user;
@@ -78,8 +78,8 @@ export async function requireBuyer() {
   return user;
 }
 
-export async function requireSupplier() {
-  const user = await requireUser({ redirectTo: "/supplier" });
+export async function requireSupplier(options: { allowPending?: boolean } = {}) {
+  const user = await requireUser({ redirectTo: "/supplier", allowPending: options.allowPending });
   if (await getMarketplaceRole(user.id) !== "supplier") redirect("/dashboard");
   return user;
 }
