@@ -882,6 +882,8 @@ body:has(.admin-console) { padding-bottom: 0; }
   color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 17px;
 }
 .promotion-channel-mark { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; color: #fff; background: #315b50; border-radius: 12px; font-size: 16px; font-weight: 850; }
+.promotion-channel-mark img { display: block; width: 22px; height: 22px; object-fit: contain; filter: invert(1); }
+.promotion-channel-mark.channel-google img { filter: none; }
 .promotion-channel strong, .promotion-channel small { display: block; }
 .promotion-channel strong { color: #fff; font-size: 13px; }
 .promotion-channel small { margin-top: 2px; color: #afc8bd; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }

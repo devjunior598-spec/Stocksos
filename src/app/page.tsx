@@ -16,15 +16,15 @@ const steps = [
 ];
 
 const promotionChannels = [
-  { name: "Instagram", mark: "◎", className: "instagram" },
-  { name: "TikTok", mark: "♪", className: "tiktok" },
-  { name: "Facebook", mark: "f", className: "facebook" },
-  { name: "YouTube", mark: "▶", className: "youtube" },
-  { name: "Google", mark: "G", className: "google" },
-  { name: "LinkedIn", mark: "in", className: "linkedin" },
-  { name: "X", mark: "X", className: "x" },
-  { name: "Pinterest", mark: "P", className: "pinterest" },
-  { name: "WhatsApp", mark: "◉", className: "whatsapp" },
+  { name: "Instagram", icon: "instagram", className: "instagram" },
+  { name: "TikTok", icon: "tiktok", className: "tiktok" },
+  { name: "Facebook", icon: "facebook-f", className: "facebook" },
+  { name: "YouTube", icon: "youtube", className: "youtube" },
+  { name: "Google", icon: "google", className: "google" },
+  { name: "LinkedIn", icon: "linkedin-in", className: "linkedin" },
+  { name: "X", icon: "x-twitter", className: "x" },
+  { name: "Pinterest", icon: "pinterest-p", className: "pinterest" },
+  { name: "WhatsApp", icon: "whatsapp", className: "whatsapp" },
 ];
 
 function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
@@ -32,7 +32,7 @@ function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
     <div className="promotion-channel-group" role={duplicate ? undefined : "list"} aria-hidden={duplicate || undefined}>
       {promotionChannels.map((channel) => (
         <div className="promotion-channel" role={duplicate ? undefined : "listitem"} key={channel.name}>
-          <span className={`promotion-channel-mark channel-${channel.className}`} aria-hidden="true">{channel.mark}</span>
+          <span className={`promotion-channel-mark channel-${channel.className}`} aria-hidden="true"><Image src={`/brand-icons/${channel.icon}.svg`} width={22} height={22} alt="" /></span>
           <span><strong>{channel.name}</strong><small>Promotion channel</small></span>
         </div>
       ))}

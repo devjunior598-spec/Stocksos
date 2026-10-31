@@ -1,0 +1,1 @@
+Brand icons from Font Awesome Free 6.7.2 (https://fontawesome.com), licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Copyright Fonticons, Inc. Brand names and logos are trademarks of their respective owners. Their display does not imply endorsement or an active integration.
