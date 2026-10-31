@@ -5,12 +5,12 @@ import { Check, Copy, ExternalLink, Share2 } from "lucide-react";
 
 type Product = { id: string; name: string; businessName: string; price: string };
 
-export function ProductPromotionTools({ product }: { product: Product }) {
+export function ProductPromotionTools({ product, publicOrigin }: { product: Product; publicOrigin: string }) {
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
   const caption = message.trim() || `${product.name} from ${product.businessName} — ${product.price}. See current availability on StockSOS:`;
   const productPath = `/product/${product.id}`;
-  const productUrl = () => `${window.location.origin}${productPath}`;
+  const productUrl = () => `${publicOrigin}${productPath}`;
   const postText = () => `${caption}\n${productUrl()}`;
 
   async function copy(text: string, label: string) {
@@ -51,7 +51,7 @@ export function ProductPromotionTools({ product }: { product: Product }) {
   return <div className="promotion-tools">
     <label htmlFor={`promotion-message-${product.id}`}>Post message</label>
     <textarea id={`promotion-message-${product.id}`} value={message} onChange={(event) => setMessage(event.target.value)} maxLength={500} placeholder={caption} />
-    <p className="promotion-link">{productPath}</p>
+    <p className="promotion-link">{productUrl()}</p>
     <div className="promotion-actions">
       <button type="button" onClick={() => openShare("facebook")}>Facebook <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("linkedin")}>LinkedIn <ExternalLink size={13} /></button>
