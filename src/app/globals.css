@@ -713,7 +713,7 @@ body:has(.admin-console) { padding-bottom: 0; }
 .inventory-edit[open] summary::after { content: "Close"; }
 .inventory-edit-form { padding: 12px 0 16px; }
 .inventory-edit-form .form-field { margin-bottom: 10px; }
-.supplier-workspace-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 22px; }
+.supplier-workspace-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 0 22px; }
 .supplier-workspace-nav a { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(135deg, #fff, #f5faf8); color: var(--navy); text-decoration: none; }
 .supplier-workspace-nav a > svg:first-child { color: var(--green); flex: 0 0 auto; }
 .supplier-workspace-nav a > svg:last-child { margin-left: auto; color: var(--muted); }
@@ -731,6 +731,7 @@ body:has(.admin-console) { padding-bottom: 0; }
 .marketplace-page-count strong { color: var(--navy); font-size: 25px; }
 .marketplace-page-count span { color: var(--muted); font-size: 11px; }
 .supplier-marketplace-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, .75fr); gap: 20px; align-items: start; }
+.supplier-marketplace-list-only { display: block; }
 .marketplace-listings, .marketplace-create-panel { min-width: 0; }
 .marketplace-subhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
 .marketplace-subhead h2 { margin: 0 0 4px; font-size: 18px; }
@@ -768,8 +769,28 @@ body:has(.admin-console) { padding-bottom: 0; }
 .marketplace-empty > svg { color: var(--green); }
 .marketplace-empty h2 { margin: 12px 0 5px; font-size: 20px; }
 .marketplace-empty p { max-width: 440px; color: var(--muted); font-size: 12px; }
+.new-product-page { max-width: 980px; }
+.new-product-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 24px; }
+.new-product-heading h1 { max-width: 600px; margin: 9px 0; font-size: clamp(30px, 4vw, 44px); letter-spacing: -.04em; }
+.new-product-heading .lead { margin: 0; max-width: 620px; }
+.new-product-tips { display: flex; align-items: flex-start; gap: 9px; max-width: 270px; padding: 13px 15px; border: 1px solid #d9e5dc; border-radius: 14px; background: #f3f8f4; color: #466254; font-size: 11px; line-height: 1.55; }
+.new-product-tips > svg { flex: 0 0 auto; color: var(--green); }
+.new-product-form { display: grid; gap: 0; padding: 0; overflow: hidden; }
+.new-product-form > section { padding: 25px; border-bottom: 1px solid var(--line); }
+.new-product-form > section h2 { margin: 0 0 14px; font-size: 17px; }
+.new-product-form .form-grid { margin-bottom: 12px; }
+.new-product-form .form-grid:last-child { margin-bottom: 0; }
+.new-product-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 18px 25px; background: #fbfcfb; }
+.supplier-orders-panel { padding: 10px; }
+.supplier-report-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 20px; }
+.supplier-report-grid .stat-card { display: grid; gap: 6px; min-width: 0; }
+.supplier-report-grid .stat-card > svg { color: var(--green); }
+.supplier-report-grid .stat-card small { color: var(--muted); font-size: 10px; }
+.report-next-steps { display: flex; align-items: center; gap: 16px; padding: 19px; }
+.report-next-steps h2 { margin: 0 auto 0 0; font-size: 16px; }
+.report-next-steps a { color: var(--green); font-size: 12px; font-weight: 700; }
 @media (max-width: 900px) { .supplier-marketplace-grid { grid-template-columns: 1fr; } .marketplace-create-panel { position: static; grid-row: 1; } }
-@media (max-width: 600px) { .marketplace-page-heading { align-items: flex-start; flex-direction: column; } .supplier-product-grid { grid-template-columns: 1fr; } .marketplace-page-count { grid-template-columns: auto auto; align-items: center; gap: 8px; min-width: 0; } .marketplace-page-count strong { font-size: 18px; } }
+@media (max-width: 600px) { .marketplace-page-heading, .new-product-heading { align-items: flex-start; flex-direction: column; } .supplier-product-grid { grid-template-columns: 1fr; } .marketplace-page-count { grid-template-columns: auto auto; align-items: center; gap: 8px; min-width: 0; } .marketplace-page-count strong { font-size: 18px; } .new-product-tips { max-width: none; } .new-product-form > section { padding: 19px 15px; } .new-product-actions { padding: 15px; } .supplier-report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .report-next-steps { align-items: flex-start; flex-direction: column; gap: 10px; } .report-next-steps h2 { margin: 0; } }
 .supplier-inventory-section .dashboard-section-head { align-items: flex-start; }
 .supplier-inventory-section .dashboard-section-head h2 { margin-bottom: 5px; }
 .supplier-inventory-section .dashboard-section-head p { margin: 0; }

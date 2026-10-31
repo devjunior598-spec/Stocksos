@@ -294,6 +294,7 @@ export async function cancelSOSAction(formData: FormData) {
 
 export async function submitQuotationAction(formData: FormData) {
   await requireSupplier();
+  const returnTo = value(formData, "return_to") === "/supplier/requests" ? "/supplier/requests" : "/supplier";
   const parsed = z.object({
     requestId: z.uuid(),
     businessId: z.uuid(),
@@ -324,7 +325,7 @@ export async function submitQuotationAction(formData: FormData) {
     : null;
   if (!parsed.success || !priceKobo || deliveryFeeKobo === null
     || (preparation !== null && (!Number.isInteger(preparation) || preparation < 0 || preparation > 10080))) {
-    redirect("/supplier?error=quote");
+    redirect(returnTo + "?error=quote");
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("submit_quotation", {
@@ -338,10 +339,11 @@ export async function submitQuotationAction(formData: FormData) {
     p_preparation_minutes: preparation,
     p_note: parsed.data.note || null,
   });
-  if (error) redirect("/supplier?error=quote");
+  if (error) redirect(returnTo + "?error=quote");
   revalidatePath("/supplier");
+  revalidatePath("/supplier/requests");
   revalidatePath("/dashboard");
-  redirect("/supplier?quote=sent");
+  redirect(returnTo + "?quote=sent");
 }
 
 export async function acceptQuotationAction(formData: FormData) {
@@ -362,7 +364,11 @@ export async function createSupplierProductAction(formData: FormData) {
     categoryId: z.uuid(),
     name: z.string().trim().min(2).max(180),
     brand: z.string().trim().max(120).optional(),
-    specifications: z.string().trim().max(1000).optional(),
+    specifications: z.string().trim().max(650).optional(),
+    sku: z.string().trim().max(80).optional(),
+    unit: z.string().trim().max(40).optional(),
+    minimumOrder: z.string().trim().max(60).optional(),
+    leadTime: z.string().trim().max(80).optional(),
     condition: z.enum(["new", "used", "refurbished"]),
     quantity: z.coerce.number().int().min(0).max(1000000),
     price: z.string().trim(),
@@ -375,6 +381,10 @@ export async function createSupplierProductAction(formData: FormData) {
     name: value(formData, "name"),
     brand: value(formData, "brand"),
     specifications: value(formData, "specifications"),
+    sku: value(formData, "sku"),
+    unit: value(formData, "unit"),
+    minimumOrder: value(formData, "minimum_order"),
+    leadTime: value(formData, "lead_time"),
     condition: value(formData, "condition"),
     quantity: value(formData, "quantity"),
     price: value(formData, "price") || "0",
@@ -383,31 +393,42 @@ export async function createSupplierProductAction(formData: FormData) {
     mediaPaths: formData.getAll("media_paths").filter((path): path is string => typeof path === "string").map((path) => path.trim()),
   });
   const unitPriceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
+  const isMarketplaceCreate = value(formData, "return_to") === "/supplier/marketplace/new";
+  const returnTo = isMarketplaceCreate ? "/supplier/marketplace" : "/supplier";
+  const errorReturnTo = isMarketplaceCreate ? "/supplier/marketplace/new" : "/supplier";
   if (!parsed.success || unitPriceKobo === null
     || parsed.data.mediaPaths.some((path) => !isMarketplaceMediaPathForBusiness(path, parsed.data.businessId))
     || (parsed.data.imagePath && (!isMarketplaceImagePathForBusiness(parsed.data.imagePath, parsed.data.businessId) || !parsed.data.mediaPaths.includes(parsed.data.imagePath)))) {
-    redirect("/supplier?error=product");
+    redirect(errorReturnTo + "?error=product");
   }
   const supabase = await createSupabaseServerClient();
+  const productDetails = [
+    parsed.data.sku ? `SKU: ${parsed.data.sku}` : "",
+    parsed.data.unit ? `Sold by: ${parsed.data.unit}` : "",
+    parsed.data.minimumOrder ? `Minimum order: ${parsed.data.minimumOrder}` : "",
+    parsed.data.leadTime ? `Lead time: ${parsed.data.leadTime}` : "",
+  ].filter(Boolean);
+  const combinedSpecifications = [parsed.data.specifications, ...productDetails].filter(Boolean).join("\n");
   const { data: productId, error } = await supabase!.rpc("create_supplier_product", {
     p_business_id: parsed.data.businessId,
     p_category_id: parsed.data.categoryId,
     p_name: parsed.data.name,
     p_brand: parsed.data.brand || null,
-    p_specifications: parsed.data.specifications || null,
+    p_specifications: combinedSpecifications || null,
     p_condition: parsed.data.condition,
     p_quantity: parsed.data.quantity,
     p_unit_price_kobo: unitPriceKobo,
     p_visibility: parsed.data.visibility,
   });
-  if (error || !productId) redirect("/supplier?error=product");
+  if (error || !productId) redirect(errorReturnTo + "?error=product");
   if (parsed.data.mediaPaths.length || parsed.data.imagePath) {
     const { error: mediaError } = await supabase!.from("products")
       .update({ image_path: parsed.data.imagePath || null, media_paths: parsed.data.mediaPaths }).eq("id", productId).eq("business_id", parsed.data.businessId);
-    if (mediaError) redirect("/supplier?product=created&image=error");
+    if (mediaError) redirect(returnTo + "?product=created&image=error");
   }
   revalidatePath("/supplier");
-  redirect("/supplier?product=created");
+  revalidatePath("/supplier/marketplace");
+  redirect(returnTo + "?product=created");
 }
 
 export async function updateSupplierProductAction(formData: FormData) {
@@ -636,16 +657,18 @@ export async function updateSupplierOrderStatusAction(formData: FormData) {
   await requireSupplier();
   const orderId = value(formData, "order_id");
   const status = value(formData, "status");
+  const returnTo = value(formData, "return_to") === "/supplier/orders" ? "/supplier/orders" : "/supplier";
   if (!z.uuid().safeParse(orderId).success || !["preparing", "ready_for_pickup"].includes(status)) {
-    redirect("/supplier?error=order");
+    redirect(returnTo + "?error=order");
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("update_supplier_order_status", { p_order_id: orderId, p_status: status });
-  if (error) redirect("/supplier?error=order");
+  if (error) redirect(returnTo + "?error=order");
   revalidatePath("/supplier");
+  revalidatePath("/supplier/orders");
   revalidatePath("/dashboard");
   revalidatePath("/delivery");
-  redirect("/supplier?order=updated");
+  redirect(returnTo + "?updated=1");
 }
 
 export async function acceptDeliveryJobAction(formData: FormData) {
