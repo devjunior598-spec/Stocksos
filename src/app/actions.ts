@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getAccountHome, getAuthenticatedUser, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { moneyToMinorUnits } from "@/lib/money";
-import { isMarketplaceImagePathForBusiness } from "@/lib/image-path";
+import { isMarketplaceImagePathForBusiness, isMarketplaceMediaPathForBusiness } from "@/lib/image-path";
 
 function value(formData: FormData, name: string) {
   const raw = formData.get(name);
@@ -354,6 +354,7 @@ export async function createSupplierProductAction(formData: FormData) {
     price: z.string().trim(),
     visibility: z.enum(["public", "private"]),
     imagePath: z.string().trim().max(200).optional(),
+    mediaPaths: z.array(z.string().trim().max(200)).max(11),
   }).safeParse({
     businessId: value(formData, "business_id"),
     categoryId: value(formData, "category_id"),
@@ -365,10 +366,12 @@ export async function createSupplierProductAction(formData: FormData) {
     price: value(formData, "price") || "0",
     visibility: value(formData, "visibility"),
     imagePath: value(formData, "image_path"),
+    mediaPaths: formData.getAll("media_paths").filter((path): path is string => typeof path === "string").map((path) => path.trim()),
   });
   const unitPriceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
   if (!parsed.success || unitPriceKobo === null
-    || (parsed.data.imagePath && !isMarketplaceImagePathForBusiness(parsed.data.imagePath, parsed.data.businessId))) {
+    || parsed.data.mediaPaths.some((path) => !isMarketplaceMediaPathForBusiness(path, parsed.data.businessId))
+    || (parsed.data.imagePath && (!isMarketplaceImagePathForBusiness(parsed.data.imagePath, parsed.data.businessId) || !parsed.data.mediaPaths.includes(parsed.data.imagePath)))) {
     redirect("/supplier?error=product");
   }
   const supabase = await createSupabaseServerClient();
@@ -384,10 +387,10 @@ export async function createSupplierProductAction(formData: FormData) {
     p_visibility: parsed.data.visibility,
   });
   if (error || !productId) redirect("/supplier?error=product");
-  if (parsed.data.imagePath) {
-    const { error: imageError } = await supabase!.from("products")
-      .update({ image_path: parsed.data.imagePath }).eq("id", productId).eq("business_id", parsed.data.businessId);
-    if (imageError) redirect("/supplier?product=created&image=error");
+  if (parsed.data.mediaPaths.length || parsed.data.imagePath) {
+    const { error: mediaError } = await supabase!.from("products")
+      .update({ image_path: parsed.data.imagePath || null, media_paths: parsed.data.mediaPaths }).eq("id", productId).eq("business_id", parsed.data.businessId);
+    if (mediaError) redirect("/supplier?product=created&image=error");
   }
   revalidatePath("/supplier");
   redirect("/supplier?product=created");
@@ -406,6 +409,7 @@ export async function updateSupplierProductAction(formData: FormData) {
     visibility: z.enum(["public", "private"]),
     isActive: z.enum(["yes", "no"]),
     imagePath: z.string().trim().max(200).optional(),
+    mediaPaths: z.array(z.string().trim().max(200)).max(11),
   }).safeParse({
     productId: value(formData, "product_id"),
     name: value(formData, "name"),
@@ -417,14 +421,15 @@ export async function updateSupplierProductAction(formData: FormData) {
     visibility: value(formData, "visibility"),
     isActive: value(formData, "is_active"),
     imagePath: value(formData, "image_path"),
+    mediaPaths: formData.getAll("media_paths").filter((path): path is string => typeof path === "string").map((path) => path.trim()),
   });
   const priceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
   if (!parsed.success || priceKobo === null) redirect("/supplier?error=product");
   const supabase = await createSupabaseServerClient();
   const { data: currentProduct } = await supabase!.from("products")
-    .select("business_id,image_path").eq("id", parsed.data.productId).maybeSingle();
-  if (!currentProduct || (parsed.data.imagePath
-    && !isMarketplaceImagePathForBusiness(parsed.data.imagePath, currentProduct.business_id))) {
+    .select("business_id,image_path,media_paths").eq("id", parsed.data.productId).maybeSingle();
+  if (!currentProduct || parsed.data.mediaPaths.some((path) => !isMarketplaceMediaPathForBusiness(path, currentProduct.business_id))
+    || (parsed.data.imagePath && (!isMarketplaceImagePathForBusiness(parsed.data.imagePath, currentProduct.business_id) || !parsed.data.mediaPaths.includes(parsed.data.imagePath)))) {
     redirect("/supplier?error=product");
   }
   const { error } = await supabase!.rpc("update_supplier_product", {
@@ -441,11 +446,11 @@ export async function updateSupplierProductAction(formData: FormData) {
   if (error) redirect("/supplier?error=product");
   const nextImagePath = parsed.data.imagePath || null;
   const { error: imageError } = await supabase!.from("products")
-    .update({ image_path: nextImagePath }).eq("id", parsed.data.productId).eq("business_id", currentProduct.business_id);
+    .update({ image_path: nextImagePath, media_paths: parsed.data.mediaPaths }).eq("id", parsed.data.productId).eq("business_id", currentProduct.business_id);
   if (imageError) redirect("/supplier?product=updated&image=error");
-  if (currentProduct.image_path && currentProduct.image_path !== nextImagePath) {
-    await supabase!.storage.from("marketplace-images").remove([currentProduct.image_path]);
-  }
+  const previousPaths = [...new Set([currentProduct.image_path, ...(currentProduct.media_paths ?? [])].filter((path): path is string => Boolean(path)))];
+  const removedPaths = previousPaths.filter((path) => !parsed.data.mediaPaths.includes(path));
+  if (removedPaths.length) await supabase!.storage.from("marketplace-images").remove(removedPaths);
   revalidatePath("/supplier");
   revalidatePath("/find-stock");
   revalidatePath("/business/[slug]", "page");
@@ -458,7 +463,7 @@ export async function deleteSupplierProductAction(formData: FormData) {
   if (!z.uuid().safeParse(productId).success) redirect("/supplier?error=product");
   const supabase = await createSupabaseServerClient();
   const { data: product } = await supabase!.from("products")
-    .select("business_id,image_path").eq("id", productId).maybeSingle();
+    .select("business_id,image_path,media_paths").eq("id", productId).maybeSingle();
   if (!product) redirect("/supplier?error=product");
   const { data: membership } = await supabase!.from("business_memberships")
     .select("role").eq("business_id", product.business_id).eq("user_id", user.id).maybeSingle();
@@ -489,7 +494,8 @@ export async function deleteSupplierProductAction(formData: FormData) {
     revalidatePath("/suppliers");
     redirect("/supplier?product=archived");
   }
-  if (product.image_path) await supabase!.storage.from("marketplace-images").remove([product.image_path]);
+  const mediaPaths = [...new Set([product.image_path, ...(product.media_paths ?? [])].filter((path): path is string => Boolean(path)))];
+  if (mediaPaths.length) await supabase!.storage.from("marketplace-images").remove(mediaPaths);
   revalidatePath("/supplier");
   revalidatePath("/find-stock");
   revalidatePath("/suppliers");
