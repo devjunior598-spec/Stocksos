@@ -18,7 +18,7 @@ function statusClass(status: string) {
   return "pill";
 }
 
-export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; error?: string; product?: string; quote?: string; order?: string; image?: string }> }) {
+export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; application?: string; error?: string; product?: string; quote?: string; order?: string; image?: string }> }) {
   const user = await requireSupplier();
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
@@ -55,6 +55,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
           <Link className="button button-primary" href="/become-supplier"><Building2 size={16} /> Add a business</Link>
         </div>
         <SupabaseSetupNotice />
+        {params.application === "created" ? <div className="notice success-notice" role="status"><div><strong>Business application submitted successfully.</strong><p>Your approved supplier account is ready. Your business storefront is active, and you can start adding inventory.</p></div></div> : null}
         {params.applied ? <div className="notice success-notice"><div><strong>Application submitted.</strong><p>Marketplace access unlocks after verification review.</p></div></div> : null}
         {params.error ? <div className="notice error-notice"><div><strong>We couldn’t complete that action.</strong><p>Refresh your workspace and try again. If it continues, contact support.</p></div></div> : null}
         {params.quote === "sent" ? <div className="notice success-notice"><div><strong>Quotation sent.</strong><p>The buyer can now review your offer.</p></div></div> : null}

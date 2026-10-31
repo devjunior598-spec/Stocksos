@@ -199,7 +199,7 @@ export async function createBusinessApplicationAction(formData: FormData) {
   }
   revalidatePath("/supplier");
   revalidatePath("/become-supplier");
-  redirect("/become-supplier?applied=1");
+  redirect("/supplier?application=created");
 }
 
 export async function createSOSAction(formData: FormData) {
