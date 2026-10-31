@@ -812,6 +812,60 @@ export async function saveSupplierAction(formData: FormData) {
   redirect("/business/" + slug + (intent === "save" ? "?saved=1" : "?saved=0"));
 }
 
+export async function createSavedSearchAction(formData: FormData) {
+  const user = await requireBuyer();
+  const parsed = z.object({
+    name: z.string().trim().min(2).max(80),
+    query: z.string().trim().min(2).max(180),
+    categoryId: z.union([z.uuid(), z.literal("")]),
+    country: z.union([z.string().trim().length(2).regex(/^[A-Z]{2}$/), z.literal("")]),
+    city: z.string().trim().max(100).optional(),
+    minPrice: z.string().trim().optional(),
+    maxPrice: z.string().trim().optional(),
+  }).safeParse({
+    name: value(formData, "name"), query: value(formData, "query"), categoryId: value(formData, "category_id"),
+    country: value(formData, "country").toUpperCase(), city: value(formData, "city"),
+    minPrice: value(formData, "min_price"), maxPrice: value(formData, "max_price"),
+  });
+  const minPriceKobo = parsed.success && parsed.data.minPrice ? moneyToMinorUnits(parsed.data.minPrice, true) : null;
+  const maxPriceKobo = parsed.success && parsed.data.maxPrice ? moneyToMinorUnits(parsed.data.maxPrice, true) : null;
+  if (!parsed.success || (parsed.data.minPrice && minPriceKobo === null) || (parsed.data.maxPrice && maxPriceKobo === null)
+    || (minPriceKobo !== null && maxPriceKobo !== null && maxPriceKobo < minPriceKobo)) redirect("/saved-searches?error=invalid");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.from("saved_searches").insert({
+    user_id: user.id, name: parsed.data.name, query: parsed.data.query,
+    category_id: parsed.data.categoryId || null, country: parsed.data.country || null,
+    city: parsed.data.city || null, min_price_kobo: minPriceKobo, max_price_kobo: maxPriceKobo,
+  });
+  if (error) redirect("/saved-searches?error=save");
+  revalidatePath("/saved-searches");
+  revalidatePath("/dashboard");
+  redirect("/saved-searches?created=1");
+}
+
+export async function updateSavedSearchAction(formData: FormData) {
+  const user = await requireBuyer();
+  const id = value(formData, "search_id");
+  const isActive = value(formData, "is_active") === "yes";
+  if (!z.uuid().safeParse(id).success) redirect("/saved-searches?error=invalid");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.from("saved_searches").update({ is_active: isActive, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", user.id);
+  if (error) redirect("/saved-searches?error=save");
+  revalidatePath("/saved-searches");
+  redirect("/saved-searches?updated=1");
+}
+
+export async function deleteSavedSearchAction(formData: FormData) {
+  const user = await requireBuyer();
+  const id = value(formData, "search_id");
+  if (!z.uuid().safeParse(id).success) redirect("/saved-searches?error=invalid");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.from("saved_searches").delete().eq("id", id).eq("user_id", user.id);
+  if (error) redirect("/saved-searches?error=delete");
+  revalidatePath("/saved-searches");
+  redirect("/saved-searches?deleted=1");
+}
+
 export async function updateSupportCaseStatusAction(formData: FormData) {
   await requireSupportStaff();
   const caseId = value(formData, "case_id");

@@ -12,7 +12,7 @@ declare
     'order_groups', 'orders', 'order_items', 'stock_reservations', 'payments',
     'refunds', 'delivery_partners', 'deliveries', 'notifications', 'notification_jobs',
     'subscription_plans', 'business_subscriptions', 'saved_suppliers', 'reviews',
-    'business_enquiries', 'support_cases', 'audit_logs', 'platform_settings'
+    'business_enquiries', 'support_cases', 'audit_logs', 'platform_settings', 'saved_searches'
   ];
 begin
   foreach v_table in array v_tables loop
