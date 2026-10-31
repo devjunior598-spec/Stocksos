@@ -1013,3 +1013,50 @@ h2 { font-size: clamp(27px, 3.2vw, 38px); margin-bottom: 12px; }
   .promotion-channel-track { animation: none !important; }
   .promotion-channel-group[aria-hidden="true"] { display: none; }
 }
+
+/* A higher-contrast visual system for StockSOS discovery and shared controls. */
+:root {
+  --navy: #101d31;
+  --navy-soft: #25344b;
+  --blue: #075fce;
+  --blue-dark: #064caa;
+  --blue-pale: #eaf2ff;
+  --ink: #26364b;
+  --muted: #56677c;
+  --line: #dce4ee;
+  --surface: #f2f5fa;
+}
+main { background: #f8faff; }
+.site-header { background: rgba(255, 255, 255, .97); border-color: #e0e7f1; }
+.brand-mark { color: #fff; background: #075fce; border-radius: 10px; }
+.primary-nav, .header-login { color: #41536a; }
+.button-primary { background: #075fce; color: #fff; }
+.button-primary:hover { background: #064caa; box-shadow: 0 8px 20px #075fce30; }
+.button-secondary { border-color: #ced8e7; }
+.button-secondary:hover { border-color: #6b8fbe; background: #f4f8ff; }
+.hero { position: relative; background: radial-gradient(circle at 84% 10%, #234b7f 0, transparent 35%), linear-gradient(135deg, #101c31, #142c4e); }
+.hero-copy h1, .hero-copy label { color: #fff; }
+.hero h1 .highlight { color: #79c7ff; }
+.hero .eyebrow { color: #9ed9ff; }
+.hero-copy .lead, .hero-trust { color: #d1ddec; }
+.hero-stock-search > div { border-color: #d5e4f3; box-shadow: 0 16px 36px #020c1c35; }
+.hero-stock-search input { color: #101d31; }
+.hero-visual { background: linear-gradient(145deg, #d9eaff, #c7ddf7); }
+.hero-glow { background: #9ecfff; }
+.request-card { border-color: #d4e2f4; box-shadow: 0 24px 48px #08182e28; }
+.request-product { background: #f1f6ff; border-color: #dbe9fa; }
+.product-emblem, .mini-avatar { background: #e4efff; color: #075fce; }
+.float-note { color: #25344b; border-color: #d6e2f1; }
+.proof-strip { background: #fff; border-color: #e2e9f2; }
+.proof-inner { color: #42556c; }
+.promotion-channel-strip, .band { background: #101d31; }
+.promotion-channel-heading .eyebrow { color: #9ed9ff; }
+.promotion-channel-heading > p, .band p { color: #d0dbea; }
+.workflow-card { background: #f3f7fc; border-color: #dfe8f2; }
+.reach-home-section { background: #edf4fc; }
+.reach-home-preview { background: #fff; border-color: #d7e4f1; }
+.page-hero { background: #edf4fc; border-color: #dce6f2; }
+.site-footer { background: #eaf0f7; border-color: #d9e3ef; }
+.footer-brand p, .footer-location, .footer-links a, .footer-bottom { color: #43566d; }
+.footer-links h3 { color: #172943; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid #176fdd; outline-offset: 3px; }

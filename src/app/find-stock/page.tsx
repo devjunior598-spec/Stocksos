@@ -29,11 +29,11 @@ export default async function FindStockPage({ searchParams }: Props) {
   return (
     <>
       <section className="page-hero"><div className="page-container"><span className="eyebrow">Stock discovery</span><h1>Find stock for your business.</h1><p className="lead">Search public listings from approved suppliers. If you can’t find what you need, send an SOS request.</p>
-        <form className="search-form" action="/find-stock"><VoiceTextField id="stock-search" name="q" defaultValue={search} placeholder="Product name, brand or spoken description" maxLength={80} fallbackAvailable={Boolean(process.env.OPENAI_API_KEY)} /><button className="button button-primary" type="submit">Search stock <ArrowRight size={15} /></button></form><p className="form-hint">Search checks verified supplier names, brands and specifications. Results always come from live inventory.</p>
+        <form className="search-form" action="/find-stock"><VoiceTextField id="stock-search" name="q" defaultValue={search} placeholder="Product name, brand or spoken description" maxLength={80} fallbackAvailable={Boolean(process.env.OPENAI_API_KEY)} /><button className="button button-primary" type="submit">Search stock <ArrowRight size={15} /></button></form><p className="form-hint">Search product names, brands and specifications in available supplier inventory.</p>
       </div></section>
       <section className="section-tight"><div className="page-container">
         <SupabaseSetupNotice />
-        {params.interpreted === "1" ? <div className="notice" role="status"><div><strong>Your spoken search has been applied.</strong><p>Review or change the filters below. {city ? `Searching in ${city}.` : "No city was provided or saved; results include all cities."} {categoryId ? "A matching category was selected." : "Category was uncertain, so all categories are included."} Launch prices are per unit in USD.</p></div></div> : null}
+        {params.interpreted === "1" ? <div className="notice" role="status"><div><strong>Your search details are ready.</strong><p>Review or change the filters below. {city ? `Searching in ${city}.` : "No city was provided or saved; results include all cities."} {categoryId ? "A matching category was selected." : "Category was uncertain, so all categories are included."} Price filters are in USD.</p></div></div> : null}
         {productError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Stock search could not be completed.</strong><p>{productError}</p></div></div> : null}
         <form className="filter-row" action="/find-stock">
           <input type="hidden" name="q" value={search} />
@@ -59,7 +59,7 @@ export default async function FindStockPage({ searchParams }: Props) {
               <Link className="text-link" href={`/product/${product.id}`}>View product <ArrowRight size={14} /></Link>
             </div>
           </article>;
-        })}</div> : <div className="empty-state"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>{search ? "No matching listings yet" : "Listings will appear here"}</h3><p>StockSOS doesn’t publish sample inventory. If your item is not listed, request it and matched suppliers can respond with an offer.</p><Link className="button button-primary" href="/sos">Request this stock <ArrowRight size={15} /></Link></div>}
+        })}</div> : !productError ? <div className="empty-state"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>{search ? "No matching listings yet" : "Listings will appear here"}</h3><p>Can’t find what you need? Send a request and matching suppliers can respond with an offer.</p><Link className="button button-primary" href="/sos">Request this stock <ArrowRight size={15} /></Link></div> : null}
       </div></section>
     </>
   );

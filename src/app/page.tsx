@@ -50,7 +50,7 @@ export default async function HomePage() {
           <div className="hero-copy">
             <span className="eyebrow"><span className="status-dot" />Source stock. Promote products. Reach customers.</span>
             <h1>Find what you need.<br /><span className="highlight">Promote what you sell.</span></h1>
-            <p className="lead">StockSOS is a global sourcing and product-promotion platform. Buyers find available stock, while approved suppliers list, promote and advertise their products to reach more customers.</p>
+            <p className="lead">StockSOS brings business buyers and suppliers together. Find available stock, publish your products and share your listings with more customers.</p>
             <form className="hero-stock-search" action="/find-stock">
               <label htmlFor="hero-query">What are you looking for?</label>
               <div><PackageSearch size={22} aria-hidden="true" /><input id="hero-query" name="q" placeholder="Search products, brands, materials…" maxLength={80} /><button type="submit" className="button button-primary">Find stock <ArrowRight size={17} /></button></div>
@@ -61,7 +61,7 @@ export default async function HomePage() {
             </div>
             <div className="hero-trust">
               <span className="trust-item"><PackageSearch size={15} /> Buyer product discovery</span>
-              <span className="trust-item"><Megaphone size={15} /> Promotion and advertising tools</span>
+              <span className="trust-item"><Megaphone size={15} /> Product sharing tools</span>
               <span className="trust-item"><ShieldCheck size={15} /> Approved supplier accounts</span>
             </div>
           </div>

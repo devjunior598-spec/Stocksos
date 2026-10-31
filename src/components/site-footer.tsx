@@ -10,7 +10,7 @@ export function SiteFooter() {
             <span className="brand-mark"><Zap size={17} fill="currentColor" /></span>
             <span>Stock<span className="brand-accent">SOS</span></span>
           </Link>
-          <p>Find the stock you need. Sell the stock you have. Rescue your business in minutes.</p>
+          <p>Find the stock you need and connect with businesses ready to supply it.</p>
           <span className="footer-location"><span className="status-dot" /> Connecting businesses and suppliers worldwide.</span>
         </div>
         <div className="footer-links">
@@ -21,7 +21,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© StockSOS · A JuniorDev Tech Solutions product</span>
+        <span>© {new Date().getFullYear()} StockSOS</span>
         <Link href="/become-supplier">Keep your business moving <ArrowUpRight size={14} /></Link>
       </div>
     </footer>
