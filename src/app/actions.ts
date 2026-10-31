@@ -171,7 +171,11 @@ export async function createBusinessApplicationAction(formData: FormData) {
     description: value(formData, "description"),
     registrationNumber: value(formData, "registration_number"),
   });
-  if (!parsed.success) redirect("/become-supplier?error=invalid");
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    const field = typeof firstIssue?.path[0] === "string" ? firstIssue.path[0] : "details";
+    redirect(`/become-supplier?error=invalid&field=${encodeURIComponent(field)}`);
+  }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("create_business_application", {
     p_name: parsed.data.name,
@@ -187,7 +191,12 @@ export async function createBusinessApplicationAction(formData: FormData) {
     p_description: parsed.data.description || null,
     p_registration_number: parsed.data.registrationNumber || null,
   });
-  if (error) redirect(error.code === "23505" ? "/become-supplier?error=slug" : "/become-supplier?error=save");
+  if (error) {
+    if (error.code === "23505") redirect("/become-supplier?error=slug");
+    if (error.code === "42501") redirect("/become-supplier?error=role");
+    if (error.code === "22023") redirect("/become-supplier?error=invalid&field=details");
+    redirect("/become-supplier?error=save");
+  }
   revalidatePath("/supplier");
   revalidatePath("/become-supplier");
   redirect("/become-supplier?applied=1");
