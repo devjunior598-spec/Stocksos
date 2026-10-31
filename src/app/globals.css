@@ -677,6 +677,19 @@ body:has(.admin-console) { padding-bottom: 0; }
 .reach-product-row:last-child, .reach-storefront:last-child { border-bottom: 0; }
 .reach-product-row > span { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--blue); }
 .reach-product-row strong { overflow: hidden; color: var(--navy); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.reach-product-promotion { border-bottom: 1px solid var(--line); }
+.reach-product-promotion:last-child { border-bottom: 0; }
+.reach-product-promotion summary { cursor: pointer; list-style: none; }
+.reach-product-promotion summary::-webkit-details-marker { display: none; }
+.reach-product-promotion summary > .text-link { white-space: nowrap; display: flex; align-items: center; gap: 5px; font-size: 11px; }
+.promotion-tools { padding: 4px 0 18px; }
+.promotion-tools label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; }
+.promotion-tools textarea { width: 100%; min-height: 80px; resize: vertical; }
+.promotion-link { overflow-wrap: anywhere; color: var(--muted); font-size: 10px; }
+.promotion-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.promotion-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--navy); font-size: 11px; cursor: pointer; }
+.promotion-actions button:hover, .promotion-actions button:focus-visible { border-color: var(--green); color: var(--green); }
+.promotion-feedback { display: flex; align-items: center; gap: 5px; margin: 10px 0 0; color: var(--green); font-size: 11px; }
 .reach-storefront strong, .reach-storefront span { display: block; }
 .reach-storefront strong { color: var(--navy); font-size: 12px; }
 .reach-storefront span { margin-top: 2px; color: var(--muted); font-size: 10px; }
