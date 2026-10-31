@@ -883,7 +883,9 @@ body:has(.admin-console) { padding-bottom: 0; }
 }
 .promotion-channel-mark { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; color: #fff; background: #315b50; border-radius: 12px; font-size: 16px; font-weight: 850; }
 .promotion-channel-mark img { display: block; width: 22px; height: 22px; object-fit: contain; filter: invert(1); }
-.promotion-channel-mark.channel-google img { filter: none; }
+.promotion-channel-mark.channel-google img,
+.promotion-channel-mark.channel-pinterest img,
+.promotion-channel-mark.channel-whatsapp img { filter: none; }
 .promotion-channel strong, .promotion-channel small { display: block; }
 .promotion-channel strong { color: #fff; font-size: 13px; }
 .promotion-channel small { margin-top: 2px; color: #afc8bd; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
@@ -894,8 +896,7 @@ body:has(.admin-console) { padding-bottom: 0; }
 .channel-google { color: #4285f4; background: #fff; }
 .channel-linkedin { background: #0a66c2; font-size: 12px; }
 .channel-x { color: #fff; background: #050505; }
-.channel-pinterest { background: #e60023; }
-.channel-whatsapp { background: #20b968; }
+.channel-pinterest, .channel-whatsapp { background: #f4f7f5; }
 @keyframes promotion-channel-scroll { to { transform: translateX(-50%); } }
 .workflow-card { background: #f0f3eb; border: 1px solid #e0e6d9; border-radius: 22px; }
 .workflow-number { color: #50695b; font-size: 14px; }
