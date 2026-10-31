@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { getAccountHome, getAuthenticatedUser, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -26,8 +28,20 @@ export async function signInAction(formData: FormData) {
   if (!parsed.success) redirect("/login?error=invalid");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/login?setup=required");
+  const requestHeaders = await headers();
+  const clientIp = requestHeaders.get("x-vercel-forwarded-for")
+    ?? requestHeaders.get("x-forwarded-for")
+    ?? requestHeaders.get("x-real-ip")
+    ?? "local-development";
+  const ipKey = createHash("sha256").update(`ip:${clientIp}`).digest("hex");
+  const { data: allowed, error: throttleError } = await supabase.rpc("consume_login_attempt", {
+    p_email: parsed.data.email,
+    p_ip_key: ipKey,
+  });
+  if (throttleError || allowed !== true) redirect("/login?error=invalid");
   const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect("/login?error=invalid");
+  await supabase.rpc("clear_login_account_lockout");
   revalidatePath("/", "layout");
   redirect(await getAccountHome(signInData.user.id));
 }
