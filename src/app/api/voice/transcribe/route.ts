@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { consumeRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 
 const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
 
@@ -9,6 +10,15 @@ export async function POST(request: Request) {
   }
   const user = await getAuthenticatedUser();
   if (!user) return NextResponse.json({ error: "Sign in to use secure backup transcription." }, { status: 401 });
+  const rateLimit = await consumeRateLimit({
+    scope: "voice-transcribe-user",
+    identifier: `${user.id}:${getRequestIdentifier(request.headers)}`,
+    limit: 10,
+    windowSeconds: 60 * 60,
+  });
+  if (rateLimit.configured && !rateLimit.allowed) {
+    return NextResponse.json({ error: "Transcription is temporarily limited. Please try again later or type your request." }, { status: 429, headers: { "Retry-After": "3600" } });
+  }
 
   const origin = request.headers.get("origin");
   if (origin) {

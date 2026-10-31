@@ -63,11 +63,19 @@ export async function requireUser(options: { allowAdmin?: boolean; allowPending?
   return user;
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(options: { enforceMfa?: boolean } = {}) {
   const user = await requireUser({ allowAdmin: true, redirectTo: "/admin" });
   if (await getPlatformRole(user.id) !== "admin") {
     const { notFound } = await import("next/navigation");
     notFound();
+  }
+  if (options.enforceMfa !== false) {
+    const supabase = await createSupabaseServerClient();
+    const { data: factors, error: factorError } = await supabase!.auth.mfa.listFactors();
+    const verifiedTotp = factors?.totp?.filter((factor) => factor.status === "verified") ?? [];
+    if (factorError || verifiedTotp.length === 0) redirect("/admin-mfa?setup=1");
+    const { data: assurance } = await supabase!.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance?.currentLevel !== "aal2") redirect("/admin-mfa?verify=1");
   }
   return user;
 }

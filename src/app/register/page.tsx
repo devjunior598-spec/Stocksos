@@ -17,7 +17,7 @@ export default async function RegisterPage({ searchParams }: Props) {
           <p>Choose the workspace that matches how you will use StockSOS.</p>
         </div>
         <SupabaseSetupNotice />
-        {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "duplicate" ? "This email is already registered." : "We couldn’t create your account."}</strong><p>{params.error === "duplicate" ? "Log in with this email or use a different email address to create another account." : "Check the details and try again."}</p></div></div> : null}
+        {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "duplicate" ? "This email is already registered." : params.error === "disposable" ? "Please use a permanent email address." : params.error === "rate" ? "Too many registration attempts." : "We couldn’t create your account."}</strong><p>{params.error === "duplicate" ? "Log in with this email or use a different email address to create another account." : params.error === "disposable" ? "Temporary email addresses can’t be used to register. Use an address you can access again, or contact support if you believe this is a mistake." : params.error === "rate" ? "Please wait before trying to create another account." : "Check the details and try again."}</p></div></div> : null}
         <div className="auth-panel">
           <form action={signUpAction}>
             <fieldset className="account-role-picker">

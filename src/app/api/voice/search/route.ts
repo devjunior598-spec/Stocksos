@@ -4,10 +4,20 @@ import { formatMoney, getCategories, getProductsResult } from "@/lib/data";
 import { parseSearchIntent } from "@/lib/search-intent";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { consumeRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 
 const requestSchema = z.object({ query: z.string().trim().min(2).max(180) });
 
 export async function POST(request: Request) {
+  const rateLimit = await consumeRateLimit({
+    scope: "voice-search-ip",
+    identifier: getRequestIdentifier(request.headers),
+    limit: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimit.configured && !rateLimit.allowed) {
+    return NextResponse.json({ error: "Search is temporarily limited. Please wait a moment and try again." }, { status: 429, headers: { "Retry-After": "60" } });
+  }
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Send a product or stock request to search." }, { status: 400 }); }
   const parsed = requestSchema.safeParse(body);

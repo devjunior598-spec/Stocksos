@@ -9,6 +9,8 @@ import { getAccountHome, getAuthenticatedUser, requireAdmin, requireBuyer, requi
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { moneyToMinorUnits } from "@/lib/money";
 import { isMarketplaceImagePathForBusiness, isMarketplaceMediaPathForBusiness } from "@/lib/image-path";
+import { isDisposableEmail } from "@/lib/disposable-email";
+import { consumeRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 
 function value(formData: FormData, name: string) {
   const raw = formData.get(name);
@@ -59,6 +61,15 @@ export async function signUpAction(formData: FormData) {
     marketplaceRole: value(formData, "marketplace_role"),
   });
   if (!parsed.success) redirect("/register?error=invalid");
+  if (isDisposableEmail(parsed.data.email)) redirect("/register?error=disposable");
+  const signupHeaders = await headers();
+  const signupLimit = await consumeRateLimit({
+    scope: "register-ip",
+    identifier: getRequestIdentifier(signupHeaders),
+    limit: 8,
+    windowSeconds: 60 * 60,
+  });
+  if (signupLimit.configured && !signupLimit.allowed) redirect("/register?error=rate");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/register?setup=required");
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -713,6 +724,14 @@ export async function createSupportCaseAction(formData: FormData) {
   // Pending or rejected applicants must still be able to contact support.
   const user = await getAuthenticatedUser();
   if (!user) redirect("/login?next=%2Fcontact");
+  const supportHeaders = await headers();
+  const supportLimit = await consumeRateLimit({
+    scope: "support-user",
+    identifier: `${user.id}:${getRequestIdentifier(supportHeaders)}`,
+    limit: 10,
+    windowSeconds: 60 * 60,
+  });
+  if (supportLimit.configured && !supportLimit.allowed) redirect("/contact?error=rate");
   const orderId = value(formData, "order_id");
   const parsed = z.object({
     subject: z.string().trim().min(3).max(160),
