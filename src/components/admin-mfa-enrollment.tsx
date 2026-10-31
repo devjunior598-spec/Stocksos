@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Props = { nextPath: string; setupRequested: boolean; verifyRequested: boolean };
+type TotpFactor = { id: string; status: string };
 
 export function AdminMfaEnrollment({ nextPath, setupRequested, verifyRequested }: Props) {
   const router = useRouter();
@@ -19,9 +20,12 @@ export function AdminMfaEnrollment({ nextPath, setupRequested, verifyRequested }
 
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.mfa.listFactors().then(({ data, error: listError }) => {
-      if (listError) setError("We could not load your authenticator setup.");
-      const factor = data?.totp?.find((item) => item.status === "verified");
+    supabase.auth.mfa.listFactors().then((result: {
+      data: { totp?: TotpFactor[] } | null;
+      error: unknown;
+    }) => {
+      if (result.error) setError("We could not load your authenticator setup.");
+      const factor = result.data?.totp?.find((item) => item.status === "verified");
       if (factor?.id) setFactorId(factor.id);
     });
   }, [supabase]);
