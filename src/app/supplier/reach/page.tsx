@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { ProductPromotionTools } from "@/components/product-promotion-tools";
 import { formatMoney } from "@/lib/data";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,7 @@ export default async function SupplierReachPage() {
   const products = (productRows ?? []) as unknown as Product[];
   const publicProducts = products.filter((product) => product.is_active && product.visibility === "public" && Number(Array.isArray(product.inventory) ? product.inventory[0]?.quantity_available : product.inventory?.quantity_available) > 0);
   const availableUnits = publicProducts.reduce((sum, product) => sum + Number(Array.isArray(product.inventory) ? product.inventory[0]?.quantity_available : product.inventory?.quantity_available ?? 0), 0);
-  const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL;
-  const publicOrigin = configuredOrigin?.startsWith("https://") && !configuredOrigin.includes("-git-")
-    ? new URL(configuredOrigin).origin : "https://socksos.vercel.app";
+  const publicOrigin = PUBLIC_SITE_ORIGIN;
   if (!approved.length) return <section className="dashboard-shell"><div className="page-container"><SupabaseSetupNotice /><div className="empty-state"><div className="empty-state-icon"><Store size={22} /></div><h3>StockSOS Reach unlocks after supplier approval</h3><p>Once your business is approved, you can publish public storefronts and manage discovery links here.</p><Link className="button button-primary" href="/supplier">Open supplier workspace <ArrowRight size={15} /></Link></div></div></section>;
   return <section className="dashboard-shell"><div className="page-container">
     <div className="dashboard-top"><div><span className="eyebrow"><Globe2 size={14} /> StockSOS Reach</span><h1>Get discovered beyond StockSOS.</h1><p className="muted">Publish eligible inventory to public storefronts and prepare it for future distribution channels.</p></div><Link className="button button-secondary" href="/supplier"><ArrowRight size={15} /> Supplier workspace</Link></div>

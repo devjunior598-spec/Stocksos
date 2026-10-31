@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const staticRoutes = ["/", "/find-stock", "/suppliers", "/categories", "/how-it-works", "/about", "/contact", "/pricing"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "https://stocksos-7k4m2p9x.vercel.app";
+  const base = PUBLIC_SITE_ORIGIN;
   const supabase = await createSupabaseServerClient();
   const entries: MetadataRoute.Sitemap = staticRoutes.map((path) => ({ url: `${base}${path}`, changeFrequency: "daily", priority: path === "/" ? 1 : 0.6 }));
   if (!supabase) return entries;

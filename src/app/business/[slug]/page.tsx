@@ -7,6 +7,7 @@ import { getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
 import { formatMoney, getMarketplaceImageUrl } from "@/lib/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ enquiry?: string; error?: string; updated?: string; saved?: string }> };
 
@@ -46,8 +47,7 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
       .eq("business_id", business.id).order("created_at", { ascending: false }).limit(20)
     : { data: [] };
   const businessCategory = Array.isArray(business.categories) ? business.categories[0] : business.categories;
-  let publicHost = "stocksos.vercel.app";
-  try { publicHost = new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://stocksos.vercel.app").host; } catch { /* keep safe fallback */ }
+  const publicHost = new URL(PUBLIC_SITE_ORIGIN).host;
 
   return <>
     <section className="page-hero"><div className="page-container business-hero">

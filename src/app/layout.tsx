@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -6,7 +7,7 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://stocksos-7k4m2p9x.vercel.app"),
+  metadataBase: new URL(PUBLIC_SITE_ORIGIN),
   title: {
     default: "StockSOS — Find stock. Rescue your business.",
     template: "%s · StockSOS",
