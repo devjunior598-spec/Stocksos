@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Zap } from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -7,7 +8,7 @@ export function SiteFooter() {
       <div className="footer-main">
         <div className="footer-brand">
           <Link href="/" className="brand">
-            <span className="brand-mark"><Zap size={17} fill="currentColor" /></span>
+            <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" /></span>
             <span>Stock<span className="brand-accent">SOS</span></span>
           </Link>
           <p>Find the stock you need and connect with businesses ready to supply it.</p>

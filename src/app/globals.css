@@ -65,6 +65,8 @@ main { min-height: 55vh; background: #fcfbf7; }
   gap: 32px;
 }
 .brand { display: inline-flex; align-items: center; gap: 9px; color: var(--navy); font-size: 20px; font-weight: 800; letter-spacing: -.8px; white-space: nowrap; }
+.brand-logo-mark { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; }
+.brand-logo-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .brand-mark {
   width: 32px; height: 32px; display: grid; place-items: center;
   color: white; background: var(--blue); border-radius: 10px;
@@ -990,6 +992,7 @@ h2 { font-size: clamp(27px, 3.2vw, 38px); margin-bottom: 12px; }
   .site-header { height: 62px; }
   .header-inner, .page-container, .footer-main, .footer-bottom { width: min(100% - 28px, 560px); }
   .brand { font-size: 18px; }
+  .brand-logo-mark { width: 38px; height: 38px; }
   .brand-mark { width: 29px; height: 29px; }
   .section { padding: 52px 0; }
   .section-tight { padding: 36px 0; }

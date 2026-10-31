@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Menu, Zap } from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight, Menu } from "lucide-react";
 import { signOutAction } from "@/app/actions";
 import { getAuthenticatedUser, getMarketplaceRole, getPlatformRole } from "@/lib/auth";
 
@@ -21,7 +22,7 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="header-inner">
         <Link href="/" className="brand" aria-label="StockSOS home">
-          <span className="brand-mark"><Zap size={18} fill="currentColor" strokeWidth={2.5} /></span>
+          <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" priority /></span>
           <span>Stock<span className="brand-accent">SOS</span></span>
         </Link>
         <nav className="primary-nav" aria-label="Main navigation">
