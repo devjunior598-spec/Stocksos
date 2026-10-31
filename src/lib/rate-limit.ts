@@ -31,7 +31,7 @@ export async function consumeRateLimit(options: RateLimitOptions) {
   return { allowed: data === true, configured: true };
 }
 
-export function getRequestIdentifier(headers: Headers) {
+export function getRequestIdentifier(headers: Pick<Headers, "get">) {
   return headers.get("x-vercel-forwarded-for")
     ?? headers.get("x-real-ip")
     ?? headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim()
