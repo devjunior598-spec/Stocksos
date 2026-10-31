@@ -22,6 +22,7 @@ Run the migration suite against a disposable staging database, then run:
 ```sh
 psql -v ON_ERROR_STOP=1 "$STAGING_DATABASE_URL" -f tests/db/authorization_matrix.sql
 psql -v ON_ERROR_STOP=1 "$STAGING_DATABASE_URL" -f tests/db/sos_match_rls.sql
+psql -v ON_ERROR_STOP=1 "$STAGING_DATABASE_URL" -f tests/db/rls_audit.sql
 ```
 
 Both scripts use a transaction and roll back their fixtures. They verify buyer, supplier, admin, and unrelated-user access boundaries.
