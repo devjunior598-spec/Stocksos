@@ -1,9 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowRight, Boxes } from "lucide-react";
 import { getCategories } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Browse product categories",
+  description: "Explore product categories and discover available business inventory from approved StockSOS suppliers worldwide.",
+  alternates: { canonical: "/categories" },
+  openGraph: { title: "Browse product categories · StockSOS", description: "Explore product categories and discover available business inventory from approved StockSOS suppliers worldwide.", url: "/categories", type: "website" },
+  twitter: { card: "summary", title: "Browse product categories · StockSOS", description: "Explore product categories and discover available business inventory from approved StockSOS suppliers worldwide." },
+};
 
 export default async function CategoriesPage() {
   const categories = await getCategories();

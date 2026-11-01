@@ -1,12 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowRight, BadgeCheck, Building2, Boxes, MapPin, PackageSearch, Share2 } from "lucide-react";
+import { ArrowRight, BadgeCheck, Building2, Boxes, MapPin, PackageSearch } from "lucide-react";
 import { createBusinessEnquiryAction, saveSupplierAction, updateBusinessEnquiryStatusAction } from "@/app/actions";
 import { getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
 import { formatMoney, getMarketplaceImageUrl } from "@/lib/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
+import { SharePageLink } from "@/components/share-page-link";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ enquiry?: string; error?: string; updated?: string; saved?: string }> };
@@ -15,10 +16,20 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
   if (!supabase) return {};
-  const { data } = await supabase.from("businesses").select("name,city,description").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
+  const { data } = await supabase.from("businesses").select("id,name,city,country,description").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
   if (!data) return {};
-  const description = data.description || `Browse verified inventory from ${data.name} in ${data.city}.`;
-  return { title: `${data.name} supplier storefront`, description, alternates: { canonical: `/business/${slug}` }, openGraph: { title: `${data.name} · StockSOS`, description, type: "website" } };
+  const description = data.description || `Browse approved, available inventory from ${data.name} in ${data.city}, ${data.country}.`;
+  const { data: listing } = await supabase.from("products").select("image_path,inventory!inner(quantity_available)")
+    .eq("business_id", data.id).eq("is_active", true).eq("visibility", "public")
+    .gt("inventory.quantity_available", 0).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const image = getMarketplaceImageUrl(listing?.image_path);
+  const url = `${PUBLIC_SITE_ORIGIN}/business/${slug}`;
+  return {
+    title: `${data.name} supplier storefront`, description,
+    alternates: { canonical: `/business/${slug}` },
+    openGraph: { title: `${data.name} · StockSOS`, description, type: "website", url, images: image ? [{ url: image, alt: `${data.name} on StockSOS` }] : [{ url: "/stocksos-logo.png", alt: "StockSOS" }] },
+    twitter: { card: image ? "summary_large_image" : "summary", title: `${data.name} · StockSOS`, description, images: image ? [{ url: image, alt: `${data.name} on StockSOS` }] : ["/stocksos-logo.png"] },
+  };
 }
 
 export default async function BusinessProfilePage({ params, searchParams }: Props) {
@@ -47,14 +58,37 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
       .eq("business_id", business.id).order("created_at", { ascending: false }).limit(20)
     : { data: [] };
   const businessCategory = Array.isArray(business.categories) ? business.categories[0] : business.categories;
-  const publicHost = new URL(PUBLIC_SITE_ORIGIN).host;
+  const publicBusinessUrl = `${PUBLIC_SITE_ORIGIN}/business/${business.slug}`;
+  const businessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    name: business.name,
+    url: publicBusinessUrl,
+    description: business.description || undefined,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: business.city || undefined,
+      addressRegion: business.region || undefined,
+      addressCountry: business.country || undefined,
+    },
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: `${business.name} available inventory`,
+      itemListElement: (products ?? []).map((product) => ({
+        "@type": "Offer",
+        itemOffered: { "@type": "Product", name: product.name, url: `${PUBLIC_SITE_ORIGIN}/product/${product.id}` },
+      })),
+    },
+  };
+  const safeBusinessJsonLd = JSON.stringify(businessJsonLd).replace(/</g, "\\u003c");
 
   return <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeBusinessJsonLd }} />
     <section className="page-hero"><div className="page-container business-hero">
       <span className="eyebrow"><BadgeCheck size={14} /> Verified business profile</span>
       <div className="business-profile-heading"><span className="business-avatar"><Building2 size={25} /></span><div><h1>{business.name}</h1><p className="lead"><MapPin size={15} /> {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")} · {businessCategory?.name ?? "StockSOS supplier"}</p></div></div>
       {business.description ? <p className="business-description">{business.description}</p> : null}
-      <div className="business-profile-actions"><Link className="button button-secondary" href="/suppliers"><ArrowRight size={15} /> All suppliers</Link>{user && marketplaceRole === "buyer" && !isMember ? <form action={saveSupplierAction}><input type="hidden" name="business_id" value={business.id} /><input type="hidden" name="slug" value={business.slug} /><input type="hidden" name="intent" value={isSaved ? "remove" : "save"} /><button className="button button-quiet" type="submit">{isSaved ? "Remove saved supplier" : "Save supplier"}</button></form> : null}<span className="share-link"><Share2 size={14} /> {publicHost}/business/{business.slug}</span></div>
+      <div className="business-profile-actions"><Link className="button button-secondary" href="/suppliers"><ArrowRight size={15} /> All suppliers</Link>{user && marketplaceRole === "buyer" && !isMember ? <form action={saveSupplierAction}><input type="hidden" name="business_id" value={business.id} /><input type="hidden" name="slug" value={business.slug} /><input type="hidden" name="intent" value={isSaved ? "remove" : "save"} /><button className="button button-quiet" type="submit">{isSaved ? "Remove saved supplier" : "Save supplier"}</button></form> : null}<SharePageLink url={publicBusinessUrl} title={`${business.name} on StockSOS`} text={`Browse approved inventory from ${business.name} on StockSOS.`} /></div>
     </div></section>
     <section className="section-tight"><div className="page-container">
       {query.enquiry ? <div className="notice success-notice enquiry-notice"><BadgeCheck size={17} /><div><strong>Enquiry sent.</strong><p>The business has been notified. Your contact details stay private unless you approve a referral.</p></div></div> : null}

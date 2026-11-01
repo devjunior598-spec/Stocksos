@@ -554,6 +554,9 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 .business-description { max-width: 700px; color: #64738e; line-height: 1.75; }
 .business-profile-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 20px; }
 .share-link { display: inline-flex; align-items: center; gap: 7px; color: #6e7c94; font-size: 12px; }
+.public-share { display: inline-flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px; }
+.public-share-url { max-width: min(62vw, 390px); overflow: hidden; color: #6e7c94; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.public-share-feedback { color: var(--green); font-size: 11px; }
 .business-profile-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 20px; align-items: start; }
 .product-specs { margin-top: 9px !important; line-height: 1.55; }
 .consent-line { display: flex; align-items: flex-start; gap: 9px; margin: 8px 0 14px; color: #586780; font-size: 11px; line-height: 1.5; }
@@ -664,6 +667,8 @@ body:has(.admin-console) { padding-bottom: 0; }
 .product-public-aside { display: grid; gap: 14px; }
 .product-public-aside .panel h3 { margin: 11px 0 6px; }
 .product-public-aside .form-submit { display: flex; width: 100%; margin-top: 10px; }
+.product-share-tools { margin-top: 15px; border-top: 1px solid var(--line); }
+.product-share-tools summary { padding: 12px 0 2px; color: var(--blue); font-size: 12px; font-weight: 700; cursor: pointer; }
 .reach-callout { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; padding: 15px 16px; color: #345d4a; background: #edf6ed; border: 1px solid #d3e7d4; border-radius: 14px; }
 .reach-callout-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; color: var(--green); background: #dcefdc; border-radius: 50%; }
 .reach-callout strong { display: block; color: #234c3b; font-size: 13px; }
@@ -704,6 +709,8 @@ body:has(.admin-console) { padding-bottom: 0; }
   .mobile-bottom-nav a:nth-child(2) { color: var(--blue); }
   .mobile-bottom-nav svg { width: 18px; height: 18px; }
   .supplier-columns, .admin-columns, .order-detail-grid, .business-profile-grid { grid-template-columns: 1fr; }
+  .public-share { width: 100%; }
+  .public-share-url { max-width: calc(100vw - 170px); }
   .quote-row { align-items: flex-start; flex-direction: column; gap: 10px; }
   .quote-action { width: 100%; justify-content: space-between; }
   .order-row { flex-wrap: wrap; }

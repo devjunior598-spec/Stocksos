@@ -1,9 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowRight, BadgeCheck, Building2, MapPin } from "lucide-react";
 import { getPublicBusinesses } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Find approved suppliers",
+  description: "Meet approved StockSOS businesses and browse their public profiles and available inventory.",
+  alternates: { canonical: "/suppliers" },
+  openGraph: { title: "Find approved suppliers · StockSOS", description: "Meet approved StockSOS businesses and browse their public profiles and available inventory.", url: "/suppliers", type: "website" },
+  twitter: { card: "summary", title: "Find approved suppliers · StockSOS", description: "Meet approved StockSOS businesses and browse their public profiles and available inventory." },
+};
 
 export default async function SuppliersPage() {
   const businesses = await getPublicBusinesses();
