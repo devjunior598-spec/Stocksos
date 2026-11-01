@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type AuthenticatedUser = { id: string; email: string | null };
+export type AuthenticatedUser = { id: string; email: string | null; signupPhone: string | null; verifiedPhone: string | null };
 export type MarketplaceRole = "buyer" | "supplier";
 export type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 
@@ -11,7 +11,15 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
   const { data, error } = await supabase.auth.getClaims();
   const claims = data?.claims;
   if (error || !claims || typeof claims.sub !== "string") return null;
-  return { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null };
+  const userMetadata = claims.user_metadata && typeof claims.user_metadata === "object"
+    ? claims.user_metadata as Record<string, unknown>
+    : {};
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : null,
+    signupPhone: typeof userMetadata.phone === "string" ? userMetadata.phone : null,
+    verifiedPhone: typeof claims.phone === "string" && claims.phone ? claims.phone : null,
+  };
 }
 
 export async function getPlatformRole(userId: string): Promise<string | null> {

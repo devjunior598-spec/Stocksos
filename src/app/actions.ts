@@ -22,6 +22,21 @@ const signInSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const e164PhoneSchema = z.string().regex(/^\+[1-9]\d{7,14}$/);
+export type PhoneOtpActionState = { status: "idle" | "sent" | "verified" | "error"; message: string };
+
+function normalizePhoneInput(raw: string) {
+  return raw.trim().replace(/[\s().-]/g, "");
+}
+
+function rateLimitHash(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+async function allowPhoneOtp(scope: string, identifier: string, limit: number, windowSeconds: number) {
+  return consumeRateLimit({ scope, identifier: rateLimitHash(identifier), limit, windowSeconds });
+}
+
 export async function signInAction(formData: FormData) {
   const parsed = signInSchema.safeParse({
     email: value(formData, "email").toLowerCase(),
@@ -48,15 +63,120 @@ export async function signInAction(formData: FormData) {
   redirect(await getAccountHome(signInData.user.id));
 }
 
+export async function requestPhoneLoginOtpAction(_previous: PhoneOtpActionState, formData: FormData): Promise<PhoneOtpActionState> {
+  const phone = normalizePhoneInput(value(formData, "phone"));
+  if (!e164PhoneSchema.safeParse(phone).success) {
+    return { status: "error", message: "Enter your phone in international format, for example +14155552671." };
+  }
+  const requestHeaders = await headers();
+  const ip = getRequestIdentifier(requestHeaders);
+  const [ipLimit, phoneLimit] = await Promise.all([
+    allowPhoneOtp("phone-login-ip", ip, 12, 60 * 60),
+    allowPhoneOtp("phone-login-number", phone, 4, 60 * 60),
+  ]);
+  if (!ipLimit.allowed || !phoneLimit.allowed) {
+    return { status: "error", message: "Too many code requests. Wait before trying again, or sign in with email and password." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { status: "error", message: "Phone sign-in is not configured yet. Use email and password for now." };
+  const { error } = await supabase.auth.signInWithOtp({ phone, options: { shouldCreateUser: false, channel: "sms" } });
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("sms") || message.includes("phone provider") || message.includes("provider is not enabled")) {
+      return { status: "error", message: "SMS sign-in is not available yet. Use email and password while StockSOS phone authentication is configured." };
+    }
+    // Keep account existence private; Supabase may return an error for unknown phone identities.
+    return { status: "sent", message: "If this number is verified on a StockSOS account, a sign-in code has been sent." };
+  }
+  return { status: "sent", message: "If this number is verified on a StockSOS account, a sign-in code has been sent." };
+}
+
+export async function verifyPhoneLoginOtpAction(_previous: PhoneOtpActionState, formData: FormData): Promise<PhoneOtpActionState> {
+  const phone = normalizePhoneInput(value(formData, "phone"));
+  const token = value(formData, "token");
+  if (!e164PhoneSchema.safeParse(phone).success || !/^\d{6}$/.test(token)) {
+    return { status: "error", message: "Enter the six-digit code sent to your verified phone." };
+  }
+  const requestHeaders = await headers();
+  const [ipLimit, phoneLimit] = await Promise.all([
+    allowPhoneOtp("phone-login-verify-ip", getRequestIdentifier(requestHeaders), 20, 60 * 60),
+    allowPhoneOtp("phone-login-verify-number", phone, 8, 60 * 60),
+  ]);
+  if (!ipLimit.allowed || !phoneLimit.allowed) {
+    return { status: "error", message: "Too many code attempts. Wait before trying again." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { status: "error", message: "Phone sign-in is not configured yet. Use email and password for now." };
+  const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+  if (error || !data.user) return { status: "error", message: "That code is incorrect or expired. Request a new code and try again." };
+  await supabase.rpc("clear_login_account_lockout");
+  revalidatePath("/", "layout");
+  redirect(await getAccountHome(data.user.id));
+}
+
+export async function requestPhoneChangeOtpAction(_previous: PhoneOtpActionState, formData: FormData): Promise<PhoneOtpActionState> {
+  const user = await requireUser();
+  const phone = normalizePhoneInput(value(formData, "phone"));
+  if (!e164PhoneSchema.safeParse(phone).success) {
+    return { status: "error", message: "Enter the phone in international format, for example +14155552671." };
+  }
+  const requestHeaders = await headers();
+  const [ipLimit, userLimit, phoneLimit] = await Promise.all([
+    allowPhoneOtp("phone-verify-ip", getRequestIdentifier(requestHeaders), 10, 60 * 60),
+    allowPhoneOtp("phone-verify-account", user.id, 5, 24 * 60 * 60),
+    allowPhoneOtp("phone-verify-number", phone, 3, 60 * 60),
+  ]);
+  if (!ipLimit.allowed || !userLimit.allowed || !phoneLimit.allowed) {
+    return { status: "error", message: "Too many phone verification attempts. Wait before trying again." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { status: "error", message: "Phone verification is not configured yet." };
+  const { error } = await supabase.auth.updateUser({ phone });
+  if (error) return { status: "error", message: "We couldn’t send a verification code. Check the number and SMS provider setup, then try again." };
+  return { status: "sent", message: "Enter the six-digit code sent to this phone to enable phone sign-in." };
+}
+
+export async function verifyPhoneChangeOtpAction(_previous: PhoneOtpActionState, formData: FormData): Promise<PhoneOtpActionState> {
+  const user = await requireUser();
+  const phone = normalizePhoneInput(value(formData, "phone"));
+  const token = value(formData, "token");
+  if (!e164PhoneSchema.safeParse(phone).success || !/^\d{6}$/.test(token)) {
+    return { status: "error", message: "Enter the six-digit phone verification code." };
+  }
+  const requestHeaders = await headers();
+  const [ipLimit, userLimit] = await Promise.all([
+    allowPhoneOtp("phone-change-verify-ip", getRequestIdentifier(requestHeaders), 15, 60 * 60),
+    allowPhoneOtp("phone-change-verify-account", user.id, 10, 24 * 60 * 60),
+  ]);
+  if (!ipLimit.allowed || !userLimit.allowed) {
+    return { status: "error", message: "Too many code attempts. Wait before trying again." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { status: "error", message: "Phone verification is not configured yet." };
+  const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: "phone_change" });
+  if (error || data.user?.id !== user.id) {
+    return { status: "error", message: "We couldn’t verify this phone for your account. Request a new code or contact support." };
+  }
+  const profileSupabase = await createSupabaseServerClient();
+  const { error: profileError } = await profileSupabase!.from("profiles").update({ phone, updated_at: new Date().toISOString() }).eq("id", user.id);
+  revalidatePath("/", "layout");
+  return {
+    status: "verified",
+    message: profileError ? "Phone verified for SMS sign-in. Save it again in Profile and fulfilment to update your contact details." : "Phone verified. You can use it for SMS sign-in.",
+  };
+}
+
 export async function signUpAction(formData: FormData) {
   const parsed = z.object({
     fullName: z.string().trim().min(2).max(120),
     email: z.email(),
+    phone: e164PhoneSchema,
     password: z.string().min(10).max(128),
     marketplaceRole: z.enum(["buyer", "supplier"]),
   }).safeParse({
     fullName: value(formData, "full_name"),
     email: value(formData, "email").toLowerCase(),
+    phone: normalizePhoneInput(value(formData, "phone")),
     password: value(formData, "password"),
     marketplaceRole: value(formData, "marketplace_role"),
   });
@@ -77,7 +197,7 @@ export async function signUpAction(formData: FormData) {
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: { full_name: parsed.data.fullName, marketplace_role: parsed.data.marketplaceRole },
+      data: { full_name: parsed.data.fullName, marketplace_role: parsed.data.marketplaceRole, phone: parsed.data.phone },
       emailRedirectTo: new URL("/auth/callback?next=/onboarding", baseUrl).toString(),
     },
   });

@@ -3,6 +3,7 @@ import { ArrowRight, LockKeyhole } from "lucide-react";
 import { signInAction } from "@/app/actions";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { PasswordInput } from "@/components/password-input";
+import { PhoneOtpLogin } from "@/components/phone-otp-login";
 
 type Props = { searchParams: Promise<{ error?: string; setup?: string; next?: string }> };
 
@@ -14,7 +15,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <div className="form-header">
           <span className="eyebrow"><LockKeyhole size={14} /> Welcome back</span>
           <h1>Log in to StockSOS</h1>
-          <p>Pick up where your business left off.</p>
+          <p>Sign in with your work email and password, or use a verified phone number for a one-time code.</p>
         </div>
         <SupabaseSetupNotice />
         {params.error ? <div className="notice error-notice" role="alert"><div><strong>We couldn’t sign you in.</strong><p>Check your email and password, then try again.</p></div></div> : null}
@@ -26,6 +27,8 @@ export default async function LoginPage({ searchParams }: Props) {
             <div className="form-bottom" style={{ textAlign: "right", margin: "0 0 16px" }}><Link href="/forgot-password">Forgot password?</Link></div>
             <button className="button button-primary form-submit" type="submit">Log in <ArrowRight size={16} /></button>
           </form>
+          <div className="phone-otp-divider"><span>OR</span></div>
+          <PhoneOtpLogin />
           <div className="form-bottom">New to StockSOS? <Link href="/register">Create an account</Link></div>
         </div>
       </div>

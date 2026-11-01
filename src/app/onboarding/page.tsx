@@ -4,6 +4,7 @@ import { saveOnboardingAction } from "@/app/actions";
 import { getMarketplaceRole, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlobalLocationFields } from "@/components/global-location-fields";
+import { PhoneLoginSetup } from "@/components/phone-login-setup";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
             <div className="dashboard-section-head"><div><h2>Profile and fulfilment</h2><p className="muted small">Changes are saved securely to your StockSOS account.</p></div><Building2 size={18} color="#246bfe" /></div>
           <form action={saveOnboardingAction}>
             <div className="form-field"><label htmlFor="full_name">Your name</label><input id="full_name" name="full_name" defaultValue={data?.full_name ?? ""} required minLength={2} maxLength={120} autoComplete="name" /></div>
-            <div className="form-field"><label htmlFor="phone">Business phone <span className="muted">(optional)</span></label><input id="phone" name="phone" type="tel" defaultValue={data?.phone ?? ""} autoComplete="tel" maxLength={30} /></div>
+            <div className="form-field"><label htmlFor="phone">Mobile / business phone</label><input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={data?.phone ?? user.signupPhone ?? ""} autoComplete="tel" maxLength={30} placeholder="Include country code, e.g. +14155552671" /><span className="form-hint">This is your contact number and the number you can verify for SMS sign-in.</span></div>
             <GlobalLocationFields description={marketplaceRole === "supplier" ? "Saved securely as your default business location." : "Saved securely to speed up future sourcing and fulfilment."} defaults={{
               country: profile.home_country,
               region: profile.home_region,
@@ -80,11 +81,15 @@ export default async function OnboardingPage({ searchParams }: Props) {
               <div className="dashboard-section-head"><div><h2>Account overview</h2><p className="muted small">Your StockSOS sign-in and profile status.</p></div><ShieldCheck size={18} color="#246bfe" /></div>
               <dl className="account-summary-list">
                 <div><dt>Sign-in email</dt><dd>{user.email ?? "Unavailable"}</dd></div>
+                <div><dt>Phone sign-in</dt><dd>{user.verifiedPhone ? "Verified" : "Not verified"}</dd></div>
                 <div><dt>Account type</dt><dd>{marketplaceRole === "supplier" ? "Supplier" : "Buyer"}</dd></div>
                 <div><dt>Account review</dt><dd><span className={`account-status-pill ${accountStatus ?? "unknown"}`}>{accountStatusLabel}</span></dd></div>
                 <div><dt>Default location</dt><dd>{locationSummary}</dd></div>
                 <div><dt>Fulfilment preference</dt><dd>{deliveryPreference}</dd></div>
               </dl>
+            </section>
+            <section className="panel dashboard-section account-security-panel">
+              <PhoneLoginSetup initialPhone={profile.phone ?? user.signupPhone ?? ""} verifiedPhone={user.verifiedPhone} />
             </section>
             <section className="panel dashboard-section account-security-panel">
               <div className="dashboard-section-head"><div><h2>Security and help</h2><p className="muted small">Keep your account accessible and protected.</p></div><KeyRound size={18} color="#246bfe" /></div>

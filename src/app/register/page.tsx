@@ -27,6 +27,7 @@ export default async function RegisterPage({ searchParams }: Props) {
             </fieldset>
             <div className="form-field"><label htmlFor="full_name">Your name</label><input id="full_name" name="full_name" autoComplete="name" required minLength={2} maxLength={120} /></div>
             <div className="form-field"><label htmlFor="email">Work email</label><input id="email" name="email" type="email" autoComplete="email" required /></div>
+            <div className="form-field"><label htmlFor="phone">Mobile phone for sign-in codes</label><input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+1 415 555 2671" maxLength={24} required /><span className="form-hint">Include your country calling code. You’ll verify this number before using SMS sign-in.</span></div>
             <PasswordInput autoComplete="new-password" minLength={10} /><span className="form-hint">Use at least 10 characters. We’ll email you a verification link.</span>
             <button className="button button-primary form-submit" type="submit">Create account <ArrowRight size={16} /></button>
           </form>
