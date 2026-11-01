@@ -102,6 +102,27 @@ main { min-height: 55vh; background: #fcfbf7; }
 .account-menu nav { position: absolute; z-index: 35; top: 34px; right: 0; min-width: 190px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: var(--shadow); }
 .account-menu nav a, .account-menu nav button { display: block; width: 100%; padding: 10px; border: 0; border-radius: 8px; color: #53617a; background: transparent; text-align: left; font-size: 13px; font-weight: 650; cursor: pointer; }
 .account-menu nav a:hover, .account-menu nav button:hover { color: var(--blue); background: #f5f7fb; }
+.account-settings-heading { align-items: center; }
+.account-settings-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.account-settings-columns { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); align-items: start; }
+.account-settings-aside { display: grid; gap: 14px; }
+.account-profile-panel form { max-width: 100%; }
+.account-summary-list { display: grid; gap: 0; margin: 0; }
+.account-summary-list > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 11px 0; border-bottom: 1px solid #edf0f5; }
+.account-summary-list > div:last-child { border-bottom: 0; }
+.account-summary-list dt { color: var(--muted); font-size: 11px; }
+.account-summary-list dd { margin: 0; color: var(--navy); font-size: 12px; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.account-status-pill { display: inline-flex; padding: 4px 8px; color: #67758d; background: #f0f2f6; border-radius: 99px; font-size: 10px; }
+.account-status-pill.approved { color: #1f6a48; background: #eaf6ee; }
+.account-status-pill.pending { color: #8b5a14; background: #fff4df; }
+.account-status-pill.rejected, .account-status-pill.suspended { color: #a33b3b; background: #fff0f0; }
+.account-settings-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; color: var(--blue); border-bottom: 1px solid #edf0f5; }
+.account-settings-link:last-of-type { border-bottom: 0; }
+.account-settings-link strong, .account-settings-link small { display: block; }
+.account-settings-link strong { color: var(--navy); font-size: 12px; }
+.account-settings-link small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.account-settings-hint { margin: 10px 0 0; }
+.account-settings-error { width: min(100%, 1080px); margin: 0 auto 16px; }
 .mobile-nav { display: none; }
 .button {
   min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
