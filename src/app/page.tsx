@@ -45,7 +45,7 @@ export default async function HomePage() {
   const publicListings = dedupePublicListings(latestProducts);
 
   return (
-    <>
+    <div className="home-page">
       <section className="hero">
         <div className="page-container hero-grid">
           <div className="hero-copy">
@@ -206,6 +206,6 @@ export default async function HomePage() {
           <Link className="button button-primary" href="/sos">Send an SOS <ArrowUpRight size={16} /></Link>
         </div>
       </section>
-    </>
+    </div>
   );
 }
