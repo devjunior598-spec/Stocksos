@@ -62,10 +62,19 @@ export default async function BuyerDashboardPage() {
           <article className="stat-card"><span>Orders in progress</span><strong>{pendingCount}</strong><span className="small">Awaiting payment or fulfilment</span></article>
           <article className="stat-card"><span>Completed orders</span><strong>{completedCount}</strong><span className="small">Recorded in your order history</span></article>
         </div>
+        <section className="buyer-task-section" aria-labelledby="buyer-tasks-title">
+          <div className="buyer-task-heading"><div><span className="eyebrow">Buyer tools</span><h2 id="buyer-tasks-title">What do you need to do?</h2></div><p className="muted small">Your main actions are grouped here for quick access.</p></div>
+          <nav className="buyer-task-grid" aria-label="Buyer dashboard shortcuts">
+            <Link className="buyer-task-card buyer-task-primary" href="/sos"><span className="buyer-task-icon"><Zap size={19} /></span><span><strong>Request stock</strong><small>Tell suppliers what you need and compare offers.</small></span><ArrowRight size={15} /></Link>
+            <Link className="buyer-task-card" href="/find-stock"><span className="buyer-task-icon"><PackageSearch size={19} /></span><span><strong>Find available stock</strong><small>Browse approved supplier products.</small></span><ArrowRight size={15} /></Link>
+            <Link className="buyer-task-card" href="/suppliers"><span className="buyer-task-icon"><Boxes size={19} /></span><span><strong>Explore suppliers</strong><small>Discover businesses by category and location.</small></span><ArrowRight size={15} /></Link>
+            <Link className="buyer-task-card" href="/saved-searches"><span className="buyer-task-icon"><Bell size={19} /></span><span><strong>Saved searches</strong><small>Manage stock alerts for recurring needs.</small></span><ArrowRight size={15} /></Link>
+          </nav>
+        </section>
         <div className="dashboard-columns">
           <div>
             <section className="panel dashboard-section">
-              <div className="dashboard-section-head"><h2>My SOS requests</h2><Link className="text-link small" href="/sos">New request <ArrowRight size={13} /></Link></div>
+              <div className="dashboard-section-head"><div><h2>Your stock requests</h2><p className="muted small">Compare supplier offers and follow each request here.</p></div><Link className="text-link small" href="/sos">New request <ArrowRight size={13} /></Link></div>
               {requests.length ? <div className="request-stack">{requests.map((request) => {
                 const requestQuotes = quoteMap.get(request.id) ?? [];
                 return <article className="request-summary" key={request.id}>
@@ -87,7 +96,7 @@ export default async function BuyerDashboardPage() {
               })}</div> : <div className="empty-state"><div className="empty-state-icon"><PackageSearch size={21} /></div><h3>No requests yet</h3><p>When your business needs stock, create an SOS request and review supplier offers here.</p><Link className="button button-primary" href="/sos">Create your first request</Link></div>}
             </section>
             <section className="panel dashboard-section">
-              <div className="dashboard-section-head"><h2>Recent orders</h2><span className="muted small">{orders.length} recorded</span></div>
+              <div className="dashboard-section-head"><div><h2>Recent orders</h2><p className="muted small">Track the orders created from accepted offers.</p></div><span className="muted small">{orders.length} recorded</span></div>
               {orders.length ? <div className="order-list">{orders.map((order) => {
                 const business = Array.isArray(order.businesses) ? order.businesses[0] : order.businesses;
                 return <Link className="order-row" href={"/orders/" + order.id} key={order.id}><span className="order-icon"><PackageCheck size={18} /></span><span className="order-copy"><strong>{business?.name ?? "Supplier order"}</strong><small>{dateLabel(order.created_at)} · {formatMoney(order.total_kobo, order.currency)}</small></span><span className={statusClass(order.status)}>{order.status.replaceAll("_", " ")}</span><ArrowRight size={15} /></Link>;
@@ -99,7 +108,7 @@ export default async function BuyerDashboardPage() {
               <div className="dashboard-section-head"><h2>Notifications</h2><Bell size={17} color="#246bfe" /></div>
               {notifications.length ? <div className="notification-list">{notifications.map((notification) => <article className={notification.read_at ? "notification-row" : "notification-row notification-unread"} key={notification.id}><div className="notification-copy"><strong>{notification.title}</strong><p>{notification.body}</p><small>{dateLabel(notification.created_at)}</small></div>{!notification.read_at ? <form action={markNotificationReadAction}><input type="hidden" name="notification_id" value={notification.id} /><button className="text-link small" type="submit">Mark read</button></form> : null}</article>)}</div> : <div className="empty-notice"><Bell size={17} /><span>No new activity yet.</span></div>}
             </section>
-            <section className="panel dashboard-section quick-links"><h2>Quick links</h2><Link href="/find-stock"><PackageSearch size={16} /> Browse available stock <ArrowRight size={14} /></Link><Link href="/saved-searches"><Bell size={16} /> Saved searches and alerts <ArrowRight size={14} /></Link><Link href="/suppliers"><Boxes size={16} /> Approved suppliers <ArrowRight size={14} /></Link><Link href="/saved-suppliers"><Boxes size={16} /> Saved suppliers <ArrowRight size={14} /></Link><Link href="/onboarding"><MapPin size={16} /> Update your profile <ArrowRight size={14} /></Link><Link href="/contact"><CircleAlert size={16} /> Get support <ArrowRight size={14} /></Link></section>
+            <section className="panel dashboard-section quick-links"><h2>Account and support</h2><Link href="/saved-suppliers"><Boxes size={16} /> Saved suppliers <ArrowRight size={14} /></Link><Link href="/onboarding"><MapPin size={16} /> Sourcing location and profile <ArrowRight size={14} /></Link><Link href="/contact"><CircleAlert size={16} /> Get support <ArrowRight size={14} /></Link></section>
           </aside>
         </div>
       </div>
