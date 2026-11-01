@@ -30,7 +30,7 @@ export default async function NewSupplierProductPage({ searchParams }: { searchP
         <div><span className="eyebrow"><PackagePlus size={14} /> Create a listing</span><h1>Give buyers the details they need.</h1><p className="lead">Add accurate product, stock, price, and media details. Buyers can then understand your offer before they contact you.</p></div>
         <div className="new-product-tips"><ImagePlus size={17} /><span>Clear photos, specific descriptions, and current stock make a listing more useful.</span></div>
       </div>
-      {params.error ? <div className="notice error-notice" role="alert"><div><strong>We couldn’t publish your product.</strong><p>Check the required details and price. If you added photos or video, confirm the upload finished, then submit again.</p></div></div> : null}
+      {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "name" ? "Add a specific product name." : params.error === "photo" ? "Add a product photo before publishing publicly." : "We couldn’t publish your product."}</strong><p>{params.error === "name" ? "Use the name buyers recognize, such as the product type, model or size. Generic entries like “Good”, “Item” or “Test” cannot be published." : params.error === "photo" ? "Upload at least one clear photo of the exact product. You can keep a listing private without a photo." : "Check the required details and price. If you added photos or video, confirm the upload finished, then submit again."}</p></div></div> : null}
       {manageable.length ? <>
         <ol className="new-product-steps" aria-label="Listing setup steps">
           <li><span>1</span> Product details</li><li><span>2</span> Price and stock</li><li><span>3</span> Photos and video</li><li><span>4</span> Review and publish</li>
@@ -41,7 +41,7 @@ export default async function NewSupplierProductPage({ searchParams }: { searchP
             <section>
               <div className="new-product-section-heading"><span>01</span><div><h2>Product details</h2><p>Start with a clear name and the right category so buyers can find your item.</p></div></div>
               <div className="form-field"><label htmlFor="business_id">Business</label><select id="business_id" name="business_id" required>{manageable.map((id) => <option value={id} key={id}>{businesses.find((business) => business.id === id)?.name}</option>)}</select><span className="form-hint">Choose which approved storefront will offer this product.</span></div>
-              <div className="form-grid"><div className="form-field"><label htmlFor="category_id">Product category</label><select id="category_id" name="category_id" required defaultValue=""><option value="" disabled>Select a category</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></div><div className="form-field"><label htmlFor="name">Product name</label><input id="name" name="name" required minLength={2} maxLength={180} placeholder="e.g. 500 ml insulated steel bottle" /></div></div>
+              <div className="form-grid"><div className="form-field"><label htmlFor="category_id">Product category</label><select id="category_id" name="category_id" required defaultValue=""><option value="" disabled>Select a category</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></div><div className="form-field"><label htmlFor="name">Product name</label><input id="name" name="name" required minLength={3} maxLength={180} placeholder="e.g. 500 ml insulated steel bottle" /><span className="form-hint">Use the name buyers recognize, including model, size or material when useful.</span></div></div>
               <div className="form-grid"><div className="form-field"><label htmlFor="brand">Brand <span className="muted">(optional)</span></label><input id="brand" name="brand" maxLength={120} placeholder="Brand or manufacturer" /></div><div className="form-field"><label htmlFor="sku">SKU or item code <span className="muted">(optional)</span></label><input id="sku" name="sku" maxLength={80} placeholder="Your internal reference" /></div></div>
             </section>
             <section>
@@ -53,7 +53,7 @@ export default async function NewSupplierProductPage({ searchParams }: { searchP
             </section>
             <section>
               <div className="new-product-section-heading"><span>03</span><div><h2>Photos and video</h2><p>Add images that show the product clearly. A short video can demonstrate use or packaging.</p></div></div>
-              <InventoryImageField id="new-product-media" />
+              <InventoryImageField id="new-product-media" photoRequiredForPublic />
             </section>
             <section>
               <div className="new-product-section-heading"><span>04</span><div><h2>Description and specifications</h2><p>Help buyers decide whether the item fits their needs.</p></div></div>
@@ -62,7 +62,7 @@ export default async function NewSupplierProductPage({ searchParams }: { searchP
             <div className="new-product-actions"><Link className="button button-secondary" href="/supplier/marketplace">Cancel</Link><button className="button button-primary" type="submit"><Globe2 size={15} /> Publish product <ArrowRight size={14} /></button></div>
           </form>
           <aside className="new-product-guide">
-            <section className="panel new-product-guide-card"><span className="new-product-guide-icon"><Store size={18} /></span><h2>Make your listing useful</h2><p>Buyers compare details before choosing a supplier. A complete listing makes that easier.</p><ul><li><Check size={14} /> Use the product’s common name</li><li><Check size={14} /> Add the category and brand</li><li><Check size={14} /> State the unit and minimum order</li><li><Check size={14} /> Keep price and stock accurate</li><li><Check size={14} /> Add clear photos when available</li></ul></section>
+            <section className="panel new-product-guide-card"><span className="new-product-guide-icon"><Store size={18} /></span><h2>Make your listing useful</h2><p>Buyers compare details before choosing a supplier. A complete listing makes that easier.</p><ul><li><Check size={14} /> Use a specific product name</li><li><Check size={14} /> Choose the closest category</li><li><Check size={14} /> Add the brand and buying unit</li><li><Check size={14} /> Keep price and stock accurate</li><li><Check size={14} /> Add a clear product photo to publish publicly</li></ul></section>
             <section className="panel new-product-visibility-card"><ShieldCheck size={18} /><div><h3>You control visibility</h3><p>Public listings can appear in StockSOS product discovery. Private listings stay in your workspace.</p></div></section>
           </aside>
         </div>

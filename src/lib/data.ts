@@ -19,6 +19,26 @@ export type PublicProduct = {
 
 export type ProductQueryResult = { products: PublicProduct[]; error: string | null };
 
+export function dedupePublicListings(products: PublicProduct[]) {
+  const seen = new Set<string>();
+  return products.filter((product) => {
+    const key = [
+      product.business_id,
+      product.category_id,
+      product.name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(),
+      product.brand?.toLowerCase().trim() ?? "",
+      product.condition,
+      product.specifications?.toLowerCase().trim() ?? "",
+      product.inventory?.currency ?? "",
+      product.inventory?.unit_price_kobo ?? "",
+      product.inventory?.quantity_available ?? "",
+    ].join("\u001f");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function rankProducts(
   products: PublicProduct[],
   search: string,
@@ -118,7 +138,7 @@ export async function getProductsResult(
     return { products: [], error: "Live stock search is temporarily unavailable. Please try again shortly." };
   }
   const products = (data ?? []) as unknown as PublicProduct[];
-  return { products: rankProducts(products, safeSearch ?? "", filters), error: null };
+  return { products: dedupePublicListings(rankProducts(products, safeSearch ?? "", filters)), error: null };
 }
 
 export function getMarketplaceImageUrl(path: string | null | undefined) {

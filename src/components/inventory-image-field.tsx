@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, LoaderCircle, Video, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -10,12 +10,38 @@ const acceptedTypes = new Map([
   ["video/mp4", "mp4"], ["video/webm", "webm"],
 ]);
 
-export function InventoryImageField({ id, currentPath = "", currentPaths = [] }: { id: string; currentPath?: string; currentPaths?: string[] }) {
+export function InventoryImageField({ id, currentPath = "", currentPaths = [], photoRequiredForPublic = false }: { id: string; currentPath?: string; currentPaths?: string[]; photoRequiredForPublic?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const initialPaths = currentPaths.length ? currentPaths : currentPath ? [currentPath] : [];
   const [paths, setPaths] = useState(initialPaths);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const form = fileRef.current?.form;
+    if (!form) return;
+    function checkListingRequirements(event: Event) {
+      if (uploading) {
+        event.preventDefault();
+        event.stopPropagation();
+        setError("Wait for the product media upload to finish before publishing.");
+        return;
+      }
+      if (!photoRequiredForPublic) return;
+      const visibilityField = form?.elements.namedItem("visibility");
+      const imageField = form?.elements.namedItem("image_path");
+      const isPublic = visibilityField instanceof HTMLSelectElement && visibilityField.value === "public";
+      const hasPhoto = imageField instanceof HTMLInputElement && Boolean(imageField.value);
+      if (isPublic && !hasPhoto) {
+        event.preventDefault();
+        event.stopPropagation();
+        setError("Add at least one clear photo of the actual product before publishing it publicly.");
+        fileRef.current?.focus();
+      }
+    }
+    form.addEventListener("submit", checkListingRequirements, true);
+    return () => form.removeEventListener("submit", checkListingRequirements, true);
+  }, [photoRequiredForPublic, uploading, paths]);
 
   async function uploadSelectedFiles() {
     const input = fileRef.current;
@@ -64,11 +90,11 @@ export function InventoryImageField({ id, currentPath = "", currentPaths = [] }:
   }
 
   return <div className="form-field inventory-image-field">
-    <label htmlFor={id}>Product photos and video <span className="muted">(optional)</span></label>
+    <label htmlFor={id}>Product photos and video <span className="muted">{photoRequiredForPublic ? "(at least one photo for public listings)" : "(optional)"}</span></label>
     <input ref={fileRef} id={id} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple disabled={uploading} aria-describedby={`${id}-hint ${id}-status`} onChange={() => void uploadSelectedFiles()} />
     {paths.map((path) => <input type="hidden" name="media_paths" value={path} key={path} />)}
     <input type="hidden" name="image_path" value={paths.find((path) => /\.(jpg|png|webp)$/i.test(path)) ?? ""} />
-    <span id={`${id}-hint`} className="form-hint"><ImagePlus size={12} /> Up to 10 photos (10 MB each) and one MP4 or WebM video (50 MB). Choose the business first.</span>
+    <span id={`${id}-hint`} className="form-hint"><ImagePlus size={12} /> Use clear photos of the exact product. The first photo is the cover. Add up to 10 photos (10 MB each) and one MP4 or WebM video (50 MB). Choose the business first.</span>
     {paths.length ? <div className="inventory-media-preview">{paths.map((path) => {
       const url = publicMediaUrl(path);
       const video = /\.(mp4|webm)$/i.test(path);

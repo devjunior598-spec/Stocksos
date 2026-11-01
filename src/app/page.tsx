@@ -4,7 +4,7 @@ import {
   ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2,
   Globe2, Megaphone, PackageSearch, ShieldCheck, Truck, Zap,
 } from "lucide-react";
-import { formatMoney, getMarketplaceImageUrl, getProductsResult } from "@/lib/data";
+import { dedupePublicListings, formatMoney, getMarketplaceImageUrl, getProductsResult } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -42,14 +42,7 @@ function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
 
 export default async function HomePage() {
   const { products: latestProducts, error: productFeedError } = await getProductsResult(undefined, undefined, 8);
-  const seenListings = new Set<string>();
-  const publicListings = latestProducts.filter((product) => {
-    const key = [product.business_id, product.name.trim().toLocaleLowerCase(), product.brand?.trim().toLocaleLowerCase() ?? ""]
-      .join(":");
-    if (seenListings.has(key)) return false;
-    seenListings.add(key);
-    return true;
-  });
+  const publicListings = dedupePublicListings(latestProducts);
 
   return (
     <>
@@ -121,15 +114,15 @@ export default async function HomePage() {
             const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;
             const imageUrl = getMarketplaceImageUrl(product.image_path);
             return <article className="product-card home-product-card" key={product.id}>
-              <Link className="product-placeholder" href={`/product/${product.id}`} aria-label={`View ${product.name}`}>
-                {imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 50vw, (max-width: 1050px) 33vw, 25vw" className="product-image" /> : <PackageSearch size={34} />}
+              <Link className={`product-placeholder${imageUrl ? "" : " product-photo-missing"}`} href={`/product/${product.id}`} aria-label={`View ${product.name}`}>
+                {imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 50vw, (max-width: 1050px) 33vw, 25vw" className="product-image" /> : <><PackageSearch size={28} /><span>Supplier photo unavailable</span></>}
               </Link>
               <div className="product-detail">
                 <div className="product-card-badges"><span className="pill pill-green"><BadgeCheck size={11} /> Approved</span><span className="pill">{product.condition}</span></div>
                 <h3><Link href={`/product/${product.id}`}>{product.name}</Link></h3>
                 <p>{business?.name ?? "Approved supplier"}</p>
-                <p>{[business?.city, business?.country].filter(Boolean).join(", ") || "Worldwide listing"}</p>
-                <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}</div>
+                <p>{[product.brand, business?.city, business?.country].filter(Boolean).join(" · ") || "Supplier location not listed"}</p>
+                <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}<small> per unit</small></div>
                 <div className="home-product-meta"><span>{stock ? `${stock.quantity_available} available` : "Check availability"}</span><Link className="text-link" href={`/product/${product.id}`}>View <ArrowRight size={13} /></Link></div>
               </div>
             </article>;
