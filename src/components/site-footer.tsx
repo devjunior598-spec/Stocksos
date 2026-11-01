@@ -8,7 +8,7 @@ export function SiteFooter() {
       <div className="footer-main">
         <div className="footer-brand">
           <Link href="/" className="brand">
-            <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" /></span>
+            <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" unoptimized /></span>
             <span>Stock<span className="brand-accent">SOS</span></span>
           </Link>
           <p>Find the stock you need and connect with businesses ready to supply it.</p>

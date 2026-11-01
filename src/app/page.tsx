@@ -33,7 +33,7 @@ function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
       {promotionChannels.map((channel) => (
         <div className="promotion-channel" role={duplicate ? undefined : "listitem"} key={channel.name}>
           <span className={`promotion-channel-mark channel-${channel.className}`} aria-hidden="true"><Image src={`/brand-icons/${channel.icon}.svg`} width={22} height={22} alt="" /></span>
-          <span><strong>{channel.name}</strong><small>Promotion channel</small></span>
+          <span><strong>{channel.name}</strong><small>Connect when eligible</small></span>
         </div>
       ))}
     </div>
@@ -42,6 +42,14 @@ function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
 
 export default async function HomePage() {
   const { products: latestProducts, error: productFeedError } = await getProductsResult(undefined, undefined, 8);
+  const seenListings = new Set<string>();
+  const publicListings = latestProducts.filter((product) => {
+    const key = [product.business_id, product.name.trim().toLocaleLowerCase(), product.brand?.trim().toLocaleLowerCase() ?? ""]
+      .join(":");
+    if (seenListings.has(key)) return false;
+    seenListings.add(key);
+    return true;
+  });
 
   return (
     <>
@@ -49,7 +57,7 @@ export default async function HomePage() {
         <div className="page-container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow"><span className="status-dot" />Source stock. Promote products. Reach customers.</span>
-            <h1>Find what you need.<br /><span className="highlight">Promote what you sell.</span></h1>
+            <h1>Find stock.<br /><span className="highlight">Grow your reach.</span></h1>
             <p className="lead">StockSOS brings business buyers and suppliers together. Find available stock, publish your products and share your listings with more customers.</p>
             <form className="hero-stock-search" action="/find-stock">
               <label htmlFor="hero-query">What are you looking for?</label>
@@ -65,23 +73,26 @@ export default async function HomePage() {
               <span className="trust-item"><ShieldCheck size={15} /> Approved supplier accounts</span>
             </div>
           </div>
-          <div className="hero-visual" aria-label="Illustration of StockSOS product promotion and discovery">
-            <div className="hero-glow" />
-            <div className="float-note float-note-top"><Megaphone size={17} /> Promote &amp; advertise products</div>
-            <div className="request-card">
-              <div className="request-top"><span className="request-kicker">Supplier growth</span><span className="pill pill-green">Reach workspace</span></div>
-              <div className="request-product">
-                <div className="product-emblem"><Globe2 size={22} /></div>
-                <div><h3>Put your products in front of buyers</h3><p>Listings · discovery · promotion · enquiries</p></div>
-              </div>
-              <div className="match-list">
-                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Building2 size={16} /></span><div><strong>Public business storefront</strong><small>Give customers a trusted place to discover you</small></div></div><BadgeCheck size={16} color="#16845b" /></div>
-                <div className="match-row"><div className="match-business"><span className="mini-avatar"><PackageSearch size={16} /></span><div><strong>Search-ready product listings</strong><small>Show accurate inventory to relevant buyers</small></div></div><ArrowRight size={16} color="#087f71" /></div>
-                <div className="match-row"><div className="match-business"><span className="mini-avatar"><Megaphone size={16} /></span><div><strong>Promotion with your approval</strong><small>Prepare campaigns for eligible channels</small></div></div><BarChart3 size={16} color="#16845b" /></div>
-              </div>
-              <p className="metric-note"><ShieldCheck size={13} /> You review promotional content before external publishing.</p>
+          <div className="hero-visual">
+            <div className="hero-pathways">
+              <span className="eyebrow">A better way to move stock</span>
+              <h2>What would you like to do?</h2>
+              <Link className="hero-pathway" href="/find-stock">
+                <span className="hero-pathway-icon"><PackageSearch size={18} /></span>
+                <span><strong>Find available stock</strong><small>Browse live listings from approved suppliers.</small></span>
+                <ArrowRight size={16} />
+              </Link>
+              <Link className="hero-pathway" href="/sos">
+                <span className="hero-pathway-icon"><Truck size={18} /></span>
+                <span><strong>Request what you need</strong><small>Send a sourcing request to relevant suppliers.</small></span>
+                <ArrowRight size={16} />
+              </Link>
+              <Link className="hero-pathway" href="/become-supplier">
+                <span className="hero-pathway-icon"><Megaphone size={18} /></span>
+                <span><strong>Promote your products</strong><small>Publish your listings for business buyers.</small></span>
+                <ArrowRight size={16} />
+              </Link>
             </div>
-            <div className="float-note float-note-bottom"><Zap size={16} /> Turn inventory into customer opportunities</div>
           </div>
         </div>
       </section>
@@ -105,7 +116,7 @@ export default async function HomePage() {
             </div>
             <Link className="button button-secondary" href="/find-stock">Browse all products <ArrowRight size={16} /></Link>
           </div>
-          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : latestProducts.length ? <div className="catalog-grid home-product-grid">{latestProducts.map((product) => {
+          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : publicListings.length ? <div className="catalog-grid home-product-grid">{publicListings.map((product) => {
             const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
             const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;
             const imageUrl = getMarketplaceImageUrl(product.image_path);
@@ -122,7 +133,7 @@ export default async function HomePage() {
                 <div className="home-product-meta"><span>{stock ? `${stock.quantity_available} available` : "Check availability"}</span><Link className="text-link" href={`/product/${product.id}`}>View <ArrowRight size={13} /></Link></div>
               </div>
             </article>;
-          })}</div> : <div className="empty-state home-product-empty"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>Supplier products will appear here</h3><p>StockSOS only displays real, available inventory from approved suppliers. The first eligible listings will publish here automatically.</p><div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">List products as a supplier <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/sos">Request a product</Link></div></div>}
+          })}</div> : <div className="empty-state home-product-empty"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>Supplier products will appear here</h3><p>StockSOS displays available inventory from approved suppliers. Suppliers can publish their listings to make them discoverable.</p><div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">List products as a supplier <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/sos">Request a product</Link></div></div>}
         </div>
       </section>
 
@@ -151,11 +162,11 @@ export default async function HomePage() {
             <div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">Promote my products <ArrowUpRight size={16} /></Link><Link className="button button-secondary" href="/how-it-works#reach">See how promotion works <ArrowRight size={16} /></Link></div>
             <p className="form-hint">You approve promotional content before external publishing. Channel eligibility applies, and StockSOS does not promise specific sales, traffic or advertising results.</p>
           </div>
-          <div className="reach-home-preview" aria-label="StockSOS Reach product promotion overview">
-            <div className="reach-preview-head"><span className="pill pill-green"><BadgeCheck size={12} /> Approved supplier</span><strong>Product visibility</strong></div>
-            <div className="reach-preview-row"><span className="feature-icon"><PackageSearch size={18} /></span><div><strong>Search-ready product pages</strong><small>Help buyers discover available inventory</small></div><span className="pill pill-green">Visible</span></div>
-            <div className="reach-preview-row"><span className="feature-icon"><Megaphone size={18} /></span><div><strong>Promotion and advertising</strong><small>Prepare accurate messaging for eligible channels</small></div><span className="pill">Your approval</span></div>
-            <div className="reach-preview-row"><span className="feature-icon"><BarChart3 size={18} /></span><div><strong>Verified performance data</strong><small>See real channel results when available</small></div><span className="pill">No estimates</span></div>
+          <div className="reach-home-preview" aria-label="StockSOS Reach supplier tools">
+            <div className="reach-preview-head"><span className="eyebrow"><Globe2 size={13} /> StockSOS Reach</span><strong>One place to grow product visibility</strong></div>
+            <div className="reach-preview-row"><span className="feature-icon"><PackageSearch size={18} /></span><div><strong>Public product listings</strong><small>Share current price, stock and supplier details with buyers.</small></div></div>
+            <div className="reach-preview-row"><span className="feature-icon"><Megaphone size={18} /></span><div><strong>Promotion tools</strong><small>Prepare and review product content before you share it.</small></div></div>
+            <div className="reach-preview-row"><span className="feature-icon"><BarChart3 size={18} /></span><div><strong>External channel setup</strong><small>Connect eligible accounts before publishing beyond StockSOS.</small></div></div>
           </div>
         </div>
       </section>

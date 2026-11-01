@@ -23,7 +23,7 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="header-inner">
         <Link href="/" className="brand" aria-label="StockSOS home">
-          <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" priority /></span>
+          <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" priority unoptimized /></span>
           <span>Stock<span className="brand-accent">SOS</span></span>
         </Link>
         <nav className="primary-nav" aria-label="Main navigation">
