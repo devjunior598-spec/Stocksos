@@ -151,13 +151,20 @@ export function getMarketplaceImageUrl(path: string | null | undefined) {
 export async function getPublicBusinesses() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
-  const { data } = await supabase.from("businesses")
+  const resultWithLogo = await supabase.from("businesses")
+    .select("id,name,slug,country,region,city,area,description,logo_path,primary_category_id")
+    .eq("verification_status", "approved")
+    .eq("visibility", "public")
+    .order("name")
+    .limit(60);
+  if (!resultWithLogo.error) return resultWithLogo.data ?? [];
+  const fallback = await supabase.from("businesses")
     .select("id,name,slug,country,region,city,area,description,primary_category_id")
     .eq("verification_status", "approved")
     .eq("visibility", "public")
     .order("name")
     .limit(60);
-  return data ?? [];
+  return (fallback.data ?? []).map((business) => ({ ...business, logo_path: null }));
 }
 
 export function formatMoney(kobo: number | string | null | undefined, currency = "USD") {

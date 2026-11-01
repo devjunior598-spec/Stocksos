@@ -6,11 +6,12 @@ import { getCategories } from "@/lib/data";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { GlobalLocationFields } from "@/components/global-location-fields";
 import { BusinessLinkFields } from "@/components/business-link-fields";
+import { BusinessLogoUpload } from "@/components/business-logo-upload";
 
 type Props = { searchParams: Promise<{ error?: string; applied?: string; field?: string }> };
 
 const fieldLabels: Record<string, string> = {
-  name: "business name", slug: "shareable business link", categoryId: "business category",
+  name: "business name", slug: "shareable business link", categoryId: "business category", logo: "business logo or photo",
   country: "country", region: "state or region", city: "city", email: "business email",
 };
 
@@ -27,13 +28,14 @@ export default async function BecomeSupplierPage({ searchParams }: Props) {
         {!configured ? <div className="form-panel"><SupabaseSetupNotice /></div> : !user ? <div className="form-panel empty-state"><div className="empty-state-icon"><ShieldCheck size={22} /></div><h3>Create a supplier account first</h3><p>Business applications are tied to a verified supplier account.</p><Link className="button button-primary" href="/register">Create supplier account <ArrowRight size={15} /></Link></div> : marketplaceRole !== "supplier" ? <div className="form-panel empty-state"><div className="empty-state-icon"><ShieldCheck size={22} /></div><h3>A supplier account is required</h3><p>This buyer account cannot register a business. Use a different email to create a dedicated supplier account.</p><Link className="button button-primary" href="/register">Create supplier account <ArrowRight size={15} /></Link></div> : (
           <div className="business-application-layout">
             {params.applied ? <div className="notice success-notice" role="status"><div><strong>Application submitted.</strong><p>Your business is pending review. Supplier features unlock after approval.</p></div></div> : null}
-            {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "invalid" ? "A required detail needs attention." : "We couldn’t submit the application."}</strong><p>{params.error === "slug" ? "That business link is already taken. Change the shareable link and try again." : params.error === "role" ? "A supplier account approved by StockSOS is required before registering a business." : params.error === "invalid" ? `Check the ${fieldLabels[params.field ?? ""] ?? "business details"} and try again.` : "The application could not be saved. Please try again; if it continues, contact StockSOS support."}</p></div></div> : null}
+            {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "invalid" ? "A required detail needs attention." : "We couldn’t submit the application."}</strong><p>{params.error === "slug" ? "That business link is already taken. Change the shareable link and try again." : params.error === "role" ? "A supplier account approved by StockSOS is required before registering a business." : params.error === "logo" ? "Use a valid JPG, PNG or WebP business image no larger than 5 MB." : params.error === "invalid" ? `Check the ${fieldLabels[params.field ?? ""] ?? "business details"} and try again.` : "The application could not be saved. Please try again; if it continues, contact StockSOS support."}</p></div></div> : null}
             <div className="auth-panel business-application-form">
               <div className="business-form-intro"><span className="eyebrow">Business details</span><h2>Build a profile buyers can trust.</h2><p>Required details help StockSOS verify and match your business. You can add and manage your products after setup.</p></div>
               <form action={createBusinessApplicationAction}>
                 <section className="business-form-section" aria-labelledby="business-identity-heading">
                   <div className="form-section-heading"><span id="business-identity-heading">1. Business identity</span><small>How buyers recognize your company</small></div>
                   <BusinessLinkFields />
+                  <BusinessLogoUpload />
                   <div className="form-field"><label htmlFor="category_id">Main business category</label><select id="category_id" name="category_id" required defaultValue=""><option value="" disabled>Select a category</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><span className="form-hint">Choose the category that best describes the products you plan to list.</span></div>
                 </section>
                 <GlobalLocationFields includeAddress={false} description="Used for global discovery and local supplier matching." />

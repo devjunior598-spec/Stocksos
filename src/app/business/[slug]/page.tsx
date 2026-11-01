@@ -16,13 +16,17 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
   if (!supabase) return {};
-  const { data } = await supabase.from("businesses").select("id,name,city,country,description").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
+  const withLogo = await supabase.from("businesses").select("id,name,city,country,description,logo_path").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
+  const fallback = withLogo.error
+    ? await supabase.from("businesses").select("id,name,city,country,description").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle()
+    : null;
+  const data = withLogo.data ?? (fallback?.data ? { ...fallback.data, logo_path: null } : null);
   if (!data) return {};
   const description = data.description || `Browse approved, available inventory from ${data.name} in ${data.city}, ${data.country}.`;
   const { data: listing } = await supabase.from("products").select("image_path,inventory!inner(quantity_available)")
     .eq("business_id", data.id).eq("is_active", true).eq("visibility", "public")
     .gt("inventory.quantity_available", 0).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  const image = getMarketplaceImageUrl(listing?.image_path);
+  const image = getMarketplaceImageUrl(data.logo_path) ?? getMarketplaceImageUrl(listing?.image_path);
   const url = `${PUBLIC_SITE_ORIGIN}/business/${slug}`;
   return {
     title: `${data.name} supplier storefront`, description,
@@ -38,9 +42,15 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
   const supabase = await createSupabaseServerClient();
   if (!supabase) return <section className="page-container section-tight"><SupabaseSetupNotice /></section>;
 
-  const { data: business } = await supabase.from("businesses")
-    .select("id,name,slug,country,region,city,area,description,primary_category_id,categories(name)")
+  const withLogo = await supabase.from("businesses")
+    .select("id,name,slug,country,region,city,area,description,logo_path,primary_category_id,categories(name)")
     .eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
+  const fallback = withLogo.error
+    ? await supabase.from("businesses")
+      .select("id,name,slug,country,region,city,area,description,primary_category_id,categories(name)")
+      .eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle()
+    : null;
+  const business = withLogo.data ?? (fallback?.data ? { ...fallback.data, logo_path: null } : null);
   if (!business) notFound();
 
   const [{ data: products }, membershipResult, savedResult] = await Promise.all([
@@ -58,12 +68,14 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
       .eq("business_id", business.id).order("created_at", { ascending: false }).limit(20)
     : { data: [] };
   const businessCategory = Array.isArray(business.categories) ? business.categories[0] : business.categories;
+  const businessLogoUrl = getMarketplaceImageUrl(business.logo_path);
   const publicBusinessUrl = `${PUBLIC_SITE_ORIGIN}/business/${business.slug}`;
   const businessJsonLd = {
     "@context": "https://schema.org",
     "@type": "Store",
     name: business.name,
     url: publicBusinessUrl,
+    logo: businessLogoUrl || undefined,
     description: business.description || undefined,
     address: {
       "@type": "PostalAddress",
@@ -86,7 +98,7 @@ export default async function BusinessProfilePage({ params, searchParams }: Prop
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeBusinessJsonLd }} />
     <section className="page-hero"><div className="page-container business-hero">
       <span className="eyebrow"><BadgeCheck size={14} /> Verified business profile</span>
-      <div className="business-profile-heading"><span className="business-avatar"><Building2 size={25} /></span><div><h1>{business.name}</h1><p className="lead"><MapPin size={15} /> {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")} · {businessCategory?.name ?? "StockSOS supplier"}</p></div></div>
+      <div className="business-profile-heading"><span className="business-avatar">{businessLogoUrl ? <Image src={businessLogoUrl} alt={`${business.name} business logo`} fill unoptimized sizes="60px" /> : <Building2 size={25} />}</span><div><h1>{business.name}</h1><p className="lead"><MapPin size={15} /> {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")} · {businessCategory?.name ?? "StockSOS supplier"}</p></div></div>
       {business.description ? <p className="business-description">{business.description}</p> : null}
       <div className="business-profile-actions"><Link className="button button-secondary" href="/suppliers"><ArrowRight size={15} /> All suppliers</Link>{user && marketplaceRole === "buyer" && !isMember ? <form action={saveSupplierAction}><input type="hidden" name="business_id" value={business.id} /><input type="hidden" name="slug" value={business.slug} /><input type="hidden" name="intent" value={isSaved ? "remove" : "save"} /><button className="button button-quiet" type="submit">{isSaved ? "Remove saved supplier" : "Save supplier"}</button></form> : null}<SharePageLink url={publicBusinessUrl} title={`${business.name} on StockSOS`} text={`Browse approved inventory from ${business.name} on StockSOS.`} /></div>
     </div></section>

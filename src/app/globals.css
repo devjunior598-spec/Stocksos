@@ -590,7 +590,8 @@ a.order-row:hover { border-color: #c9d8f5; background: #fbfcff; }
 .delivery-route { display: flex; align-items: center; gap: 9px; color: #63718a; font-size: 12px; }
 .empty-notice { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 12px; }
 .business-profile-heading { display: flex; align-items: center; gap: 18px; margin: 22px 0 10px; }
-.business-avatar { width: 60px; height: 60px; display: grid; place-items: center; flex: 0 0 auto; color: var(--blue); background: var(--blue-pale); border-radius: 18px; }
+.business-avatar { position: relative; width: 60px; height: 60px; display: grid; place-items: center; flex: 0 0 auto; overflow: hidden; color: var(--blue); background: var(--blue-pale); border-radius: 18px; }
+.business-avatar img { object-fit: cover; }
 .business-profile-heading h1 { margin: 0 0 8px; font-size: clamp(36px, 5vw, 56px); }
 .business-profile-heading .lead { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 14px; }
 .business-description { max-width: 700px; color: #64738e; line-height: 1.75; }
@@ -1544,4 +1545,31 @@ textarea:focus-visible, summary:focus-visible { outline: 3px solid rgba(8, 127, 
   .business-profile-guide { grid-template-columns: 1fr; }
   .business-form-intro h2 { font-size: 21px; }
   .business-application-form .form-section-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+}
+
+.business-logo-field { margin: 16px 0 22px; }
+.business-logo-picker { display: grid; grid-template-columns: 116px minmax(0, 1fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid #dfe6e1; border-radius: 14px; background: #fbfdfc; }
+.business-logo-preview { position: relative; width: 116px; height: 116px; display: grid; place-items: center; overflow: hidden; border: 1px dashed #bbccc2; border-radius: 15px; background: #eef4f0; }
+.business-logo-preview-image { position: absolute; inset: 0; background-position: center; background-size: cover; }
+.business-logo-placeholder { display: grid; justify-items: center; gap: 5px; color: #6e897a; }
+.business-logo-placeholder small { font-size: 9px; }
+.business-logo-copy { min-width: 0; }
+.business-logo-copy > strong { color: var(--navy); font-size: 12px; }
+.business-logo-copy > p { margin: 4px 0 10px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.business-logo-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.business-logo-actions .button { width: auto; min-height: 34px; }
+.business-logo-actions label { margin: 0; cursor: pointer; }
+.business-logo-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
+.business-logo-input:focus-visible + .business-logo-security { outline: 2px solid var(--primary); outline-offset: 3px; }
+.business-logo-security { display: flex; align-items: center; gap: 5px; margin-top: 7px; color: #64766b; font-size: 10px; }
+.business-logo-error { min-height: 1px; color: #9d3e35; }
+.supplier-directory-card { position: relative; padding-top: 18px; }
+.supplier-directory-mark { position: relative; width: 54px; height: 54px; display: grid; place-items: center; overflow: hidden; margin-bottom: 12px; border-radius: 14px; color: #28765d; background: #e8f3ed; }
+.supplier-directory-mark img { object-fit: cover; }
+
+@media (max-width: 560px) {
+  .business-logo-picker { grid-template-columns: 84px minmax(0, 1fr); gap: 12px; padding: 11px; }
+  .business-logo-preview { width: 84px; height: 84px; border-radius: 12px; }
+  .business-logo-copy > strong { font-size: 11px; }
+  .business-logo-copy > p { font-size: 10px; }
 }

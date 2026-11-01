@@ -20,7 +20,7 @@ const workspaceLinks = [
   { href: "/supplier/reports", label: "Reports", description: "See activity and performance from your account.", icon: ChartNoAxesCombined, action: "Open reports" },
 ];
 
-export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; application?: string; error?: string; product?: string; quote?: string; order?: string; image?: string }> }) {
+export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; application?: string; error?: string; product?: string; quote?: string; order?: string; image?: string; logo?: string }> }) {
   const user = await requireSupplier();
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
@@ -73,6 +73,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
         </div>
         <SupabaseSetupNotice />
         {params.application === "created" ? <div className="notice success-notice" role="status"><div><strong>Business application submitted successfully.</strong><p>Your supplier workspace is ready. Add products to make your stock discoverable.</p></div></div> : null}
+        {params.logo === "error" ? <div className="notice error-notice" role="alert"><div><strong>Your business profile was saved, but its image could not be attached.</strong><p>You can continue to your supplier workspace. Please contact support so the business image can be added to your storefront.</p></div></div> : null}
         {params.applied ? <div className="notice success-notice" role="status"><div><strong>Application submitted.</strong><p>You can follow its review status in your supplier workspace.</p></div></div> : null}
         {params.error ? <div className="notice error-notice" role="alert"><div><strong>We couldn’t complete that action.</strong><p>Refresh your workspace and try again. If it continues, contact support.</p></div></div> : null}
         {params.quote === "sent" ? <div className="notice success-notice" role="status"><div><strong>Quotation sent.</strong><p>The buyer can now review your offer.</p></div></div> : null}

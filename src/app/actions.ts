@@ -322,8 +322,24 @@ export async function createBusinessApplicationAction(formData: FormData) {
     const field = typeof firstIssue?.path[0] === "string" ? firstIssue.path[0] : "details";
     redirect(`/become-supplier?error=invalid&field=${encodeURIComponent(field)}`);
   }
+  const logoEntry = formData.get("business_logo");
+  const logoFile = logoEntry instanceof File && logoEntry.size > 0 ? logoEntry : null;
+  let logoExtension = "";
+  if (logoFile) {
+    const logoTypes: Record<string, { extension: string; signature: (bytes: Uint8Array) => boolean }> = {
+      "image/jpeg": { extension: "jpg", signature: (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff },
+      "image/png": { extension: "png", signature: (bytes) => bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 },
+      "image/webp": { extension: "webp", signature: (bytes) => String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP" },
+    };
+    const logoType = logoTypes[logoFile.type];
+    const logoHeader = new Uint8Array(await logoFile.slice(0, 12).arrayBuffer());
+    if (logoFile.size > 5 * 1024 * 1024 || !logoType || !logoType.signature(logoHeader)) {
+      redirect("/become-supplier?error=logo");
+    }
+    logoExtension = logoType.extension;
+  }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase!.rpc("create_business_application", {
+  const { data: businessId, error } = await supabase!.rpc("create_business_application", {
     p_name: parsed.data.name,
     p_slug: parsed.data.slug,
     p_category_id: parsed.data.categoryId,
@@ -343,9 +359,34 @@ export async function createBusinessApplicationAction(formData: FormData) {
     if (error.code === "22023") redirect("/become-supplier?error=invalid&field=details");
     redirect("/become-supplier?error=save");
   }
+  let logoSaved = true;
+  if (logoFile && logoExtension) {
+    const safeBusinessId = z.uuid().safeParse(businessId);
+    if (!safeBusinessId.success) {
+      logoSaved = false;
+    } else {
+      const logoPath = `${safeBusinessId.data}/${crypto.randomUUID()}.${logoExtension}`;
+      const { error: uploadError } = await supabase!.storage.from("marketplace-images").upload(logoPath, logoFile, {
+        contentType: logoFile.type,
+        cacheControl: "86400",
+        upsert: false,
+      });
+      if (uploadError) {
+        logoSaved = false;
+      } else {
+        const { error: updateError } = await supabase!.from("businesses").update({ logo_path: logoPath }).eq("id", safeBusinessId.data);
+        if (updateError) {
+          logoSaved = false;
+          await supabase!.storage.from("marketplace-images").remove([logoPath]);
+        }
+      }
+    }
+  }
   revalidatePath("/supplier");
   revalidatePath("/become-supplier");
-  redirect("/supplier?application=created");
+  revalidatePath("/suppliers");
+  revalidatePath(`/business/${parsed.data.slug}`);
+  redirect(`/supplier?application=created${logoSaved ? "" : "&logo=error"}`);
 }
 
 export async function createSOSAction(formData: FormData) {
