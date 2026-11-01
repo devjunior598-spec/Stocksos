@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BadgeCheck, ImagePlus, PackagePlus, PackageSearch, Store, Video } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, CheckCircle2, ImagePlus, PackagePlus, PackageSearch, Store, Video } from "lucide-react";
 import { deleteSupplierProductAction, updateSupplierProductAction } from "@/app/actions";
 import { requireSupplier } from "@/lib/auth";
 import { formatMoney, getMarketplaceImageUrl } from "@/lib/data";
@@ -28,7 +28,7 @@ export default async function SupplierMarketplacePage({ searchParams }: Props) {
     <div className="page-container">
       <Link className="text-link marketplace-back" href="/supplier"><ArrowLeft size={15} /> Supplier workspace</Link>
       <div className="marketplace-page-heading"><div><span className="eyebrow"><Store size={14} /> Supplier marketplace</span><h1>Your products, ready to be discovered.</h1><p className="lead">Create polished listings with clear product photos, video, accurate availability and pricing.</p></div><div className="marketplace-page-count"><strong>{products.filter((item) => item.is_active).length}</strong><span>active listings</span></div></div>
-      {params.product ? <div className="notice success-notice" role="status"><div><strong>{params.product === "created" ? "Product published." : params.product === "updated" ? "Product updated." : params.product === "deleted" ? "Product deleted." : params.product === "archived" ? "Listing archived." : "Product saved."}</strong><p>Your marketplace listing has been updated.</p></div></div> : null}
+      {params.product ? <div className="notice success-notice marketplace-publish-success" role="status"><CheckCircle2 size={22} /><div><strong>{params.product === "created" ? "Product added successfully." : params.product === "updated" ? "Product updated successfully." : params.product === "deleted" ? "Product deleted." : params.product === "archived" ? "Listing archived." : "Product saved."}</strong><p>{params.product === "created" ? "Your listing is now in your product list. Public listings can be discovered by buyers." : params.product === "updated" ? "Your latest product details and availability have been saved." : params.product === "archived" ? "This listing has order history, so it was hidden and preserved." : "Your marketplace product list has been updated."}</p><div className="marketplace-publish-actions"><Link href="/supplier/marketplace/new">Add another product <ArrowRight size={13} /></Link><Link href="/supplier">Back to workspace <ArrowRight size={13} /></Link></div></div></div> : null}
       {params.error ? <div className="notice error-notice" role="alert"><div><strong>We couldn’t save that listing.</strong><p>Check the product details and try again.</p></div></div> : null}
       {params.image === "error" ? <div className="notice error-notice" role="alert"><div><strong>Media could not be connected to this listing.</strong><p>Try adding the photo or video again.</p></div></div> : null}
 
