@@ -15,6 +15,12 @@ export const metadata: Metadata = {
   description:
     "Find the stock you need, sell the stock you have, and keep your business moving with StockSOS.",
   applicationName: "StockSOS",
+  appleWebApp: {
+    capable: true,
+    title: "StockSOS",
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false },
   robots: { index: true, follow: true },
 };
 

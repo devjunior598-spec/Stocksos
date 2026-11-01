@@ -4,6 +4,7 @@ import { ArrowUpRight, Menu } from "lucide-react";
 import { signOutAction } from "@/app/actions";
 import { getAuthenticatedUser, getMarketplaceRole, getPlatformRole } from "@/lib/auth";
 import { AccountMenu } from "@/components/account-menu";
+import { InstallAppButton } from "@/components/install-app-button";
 
 const links = [
   { href: "/find-stock", label: "Find stock" },
@@ -30,6 +31,7 @@ export async function SiteHeader() {
           {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
         </nav>
         <div className="header-actions">
+          <InstallAppButton />
           {user
             ? <AccountMenu workspaceHref={accountLink.href} workspaceLabel={accountLink.label} isAdmin={isAdmin} />
             : <Link className="header-login" href="/login">Log in</Link>}
@@ -41,6 +43,7 @@ export async function SiteHeader() {
           <summary aria-label="Open navigation"><Menu size={22} /></summary>
           <nav aria-label="Mobile navigation">
             {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
+            <InstallAppButton />
             {user
               ? <>{isAdmin ? <Link href="/admin">Admin console</Link> : <><Link href={accountLink.href}>{accountLink.label}</Link><Link href="/onboarding">Account settings</Link></>}<form action={signOutAction}><button className="mobile-nav-action" type="submit">Log out</button></form></>
               : <Link href="/login">Log in</Link>}
