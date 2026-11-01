@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowUpRight, Menu } from "lucide-react";
 import { signOutAction } from "@/app/actions";
 import { getAuthenticatedUser, getMarketplaceRole, getPlatformRole } from "@/lib/auth";
+import { AccountMenu } from "@/components/account-menu";
 
 const links = [
   { href: "/find-stock", label: "Find stock" },
@@ -16,7 +17,7 @@ export async function SiteHeader() {
   const isAdmin = user ? await getPlatformRole(user.id) === "admin" : false;
   const marketplaceRole = user && !isAdmin ? await getMarketplaceRole(user.id) : null;
   const accountLink = marketplaceRole === "supplier"
-    ? { href: "/supplier", label: "Supplier workspace" }
+    ? { href: "/supplier", label: "Supplier Workspace" }
     : { href: "/dashboard", label: "Buyer dashboard" };
   return (
     <header className="site-header">
@@ -29,16 +30,9 @@ export async function SiteHeader() {
           {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
         </nav>
         <div className="header-actions">
-          {user ? <details className="account-menu">
-            <summary className="header-login">My account</summary>
-            <nav aria-label="Account navigation">
-              {isAdmin
-                ? <Link href="/admin">Admin console</Link>
-                : <Link href={accountLink.href}>{accountLink.label}</Link>}
-              {!isAdmin ? <Link href="/onboarding">Account settings</Link> : null}
-              <form action={signOutAction}><button type="submit">Log out</button></form>
-            </nav>
-          </details> : <Link className="header-login" href="/login">Log in</Link>}
+          {user
+            ? <AccountMenu workspaceHref={accountLink.href} workspaceLabel={accountLink.label} isAdmin={isAdmin} />
+            : <Link className="header-login" href="/login">Log in</Link>}
           {!isAdmin && <Link className="button button-small button-primary" href={marketplaceRole === "supplier" ? "/supplier" : "/sos"}>
             {marketplaceRole === "supplier" ? "Open workspace" : "Send an SOS"} <ArrowUpRight size={15} />
           </Link>}
