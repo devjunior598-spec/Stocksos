@@ -5,6 +5,8 @@ import { getCategories, getProductsResult, formatMoney, getMarketplaceImageUrl }
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { z } from "zod";
 import { VoiceTextField } from "@/components/voice-text-field";
+import { createSavedSearchAction } from "@/app/actions";
+import { getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
 
 type Props = { searchParams: Promise<{ q?: string; category?: string; country?: string; city?: string; min?: string; max?: string; interpreted?: string }> };
 
@@ -21,10 +23,14 @@ export default async function FindStockPage({ searchParams }: Props) {
   };
   const min = parsePrice(params.min);
   const max = parsePrice(params.max);
-  const [productResult, categories] = await Promise.all([
+  const [productResult, categories, user] = await Promise.all([
     getProductsResult(search, { categoryId, country, city, minPriceKobo: min, maxPriceKobo: max }),
     getCategories(),
+    getAuthenticatedUser(),
   ]);
+  const role = user ? await getMarketplaceRole(user.id) : null;
+  const hasFilters = Boolean(search || categoryId || city || country || min !== undefined || max !== undefined);
+  const canSaveSearch = role === "buyer" && hasFilters;
   const { products, error: productError } = productResult;
   return (
     <>
@@ -44,6 +50,8 @@ export default async function FindStockPage({ searchParams }: Props) {
           <div className="form-field"><label htmlFor="max">Maximum USD</label><input id="max" name="max" type="number" min="0" step="0.01" defaultValue={params.max ?? ""} /></div>
           <button className="button button-secondary" type="submit">Apply filters</button>
         </form>
+        {canSaveSearch ? <form action={createSavedSearchAction} className="save-search-inline"><div><strong>Want to check back later?</strong><span>Get a notification when matching approved stock appears.</span></div><input type="hidden" name="query" value={search || categories.find((category) => category.id === categoryId)?.name || "available stock"} /><input type="hidden" name="category_id" value={categoryId ?? ""} /><input type="hidden" name="country" value={country} /><input type="hidden" name="city" value={city} /><input type="hidden" name="min_price" value={params.min ?? ""} /><input type="hidden" name="max_price" value={params.max ?? ""} /><input name="name" aria-label="Alert name" required minLength={2} maxLength={80} defaultValue={search ? `${search} stock alert` : "My stock alert"} /><button className="button button-secondary button-small" type="submit">Save alert</button></form> : null}
+        {!user && search ? <div className="save-search-inline"><div><strong>Save this search</strong><span>Sign in as a buyer to get alerts when matching stock appears.</span></div><Link className="button button-secondary button-small" href={`/login?next=${encodeURIComponent("/find-stock?" + new URLSearchParams({ q: search }))}`}>Sign in to save</Link></div> : null}
         {products.length ? <div className="catalog-grid">{products.map((product) => {
           const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
           const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;

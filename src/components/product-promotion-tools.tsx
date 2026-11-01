@@ -10,8 +10,8 @@ export function ProductPromotionTools({ product, publicOrigin }: { product: Prod
   const [feedback, setFeedback] = useState("");
   const caption = message.trim() || `${product.name} from ${product.businessName} — ${product.price}. See current availability on StockSOS:`;
   const productPath = `/product/${product.id}`;
-  const productUrl = () => `${publicOrigin}${productPath}`;
-  const postText = () => `${caption}\n${productUrl()}`;
+  const productUrl = (source = "stocksos_reach") => `${publicOrigin}${productPath}?utm_source=${encodeURIComponent(source)}&utm_medium=social&utm_campaign=supplier_listing`;
+  const postText = (source = "stocksos_reach") => `${caption}\n${productUrl(source)}`;
 
   async function copy(text: string, label: string) {
     try {
@@ -28,7 +28,7 @@ export function ProductPromotionTools({ product, publicOrigin }: { product: Prod
       return;
     }
     try {
-      await navigator.share({ title: product.name, text: caption, url: productUrl() });
+      await navigator.share({ title: product.name, text: caption, url: productUrl("share_sheet") });
       setFeedback("Share menu opened");
     } catch (error) {
       if ((error as Error).name !== "AbortError") setFeedback("Sharing did not open. Copy the post text instead.");
@@ -36,14 +36,14 @@ export function ProductPromotionTools({ product, publicOrigin }: { product: Prod
   }
 
   function openShare(platform: "facebook" | "linkedin" | "x" | "whatsapp") {
-    const url = productUrl();
+    const url = productUrl(platform);
     const destination = platform === "facebook"
       ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
       : platform === "linkedin"
         ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
         : platform === "x"
           ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}&url=${encodeURIComponent(url)}`
-          : `https://wa.me/?text=${encodeURIComponent(postText())}`;
+          : `https://wa.me/?text=${encodeURIComponent(postText(platform))}`;
     window.open(destination, "_blank", "noopener,noreferrer");
     setFeedback(`Opened ${platform === "x" ? "X" : platform} sharing. Review the post before publishing.`);
   }
@@ -51,14 +51,14 @@ export function ProductPromotionTools({ product, publicOrigin }: { product: Prod
   return <div className="promotion-tools">
     <label htmlFor={`promotion-message-${product.id}`}>Post message</label>
     <textarea id={`promotion-message-${product.id}`} value={message} onChange={(event) => setMessage(event.target.value)} maxLength={500} placeholder={caption} />
-    <p className="promotion-link">{productUrl()}</p>
+    <p className="promotion-link">{productUrl("supplier_link")}</p>
     <div className="promotion-actions">
       <button type="button" onClick={() => openShare("facebook")}>Facebook <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("linkedin")}>LinkedIn <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("x")}>X <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("whatsapp")}>WhatsApp <ExternalLink size={13} /></button>
       <button type="button" onClick={nativeShare}><Share2 size={13} /> Phone share menu</button>
-      <button type="button" onClick={() => copy(postText(), "Post text")}><Copy size={13} /> Copy for Instagram or TikTok</button>
+      <button type="button" onClick={() => copy(postText("instagram_tiktok"), "Post text")}><Copy size={13} /> Copy for Instagram or TikTok</button>
     </div>
     {feedback ? <p className="promotion-feedback" role="status"><Check size={13} /> {feedback}</p> : null}
   </div>;

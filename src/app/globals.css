@@ -285,6 +285,11 @@ h3 { font-size: 18px; line-height: 1.3; margin-bottom: 9px; font-weight: 720; }
 .dashboard-section-head h2 { margin: 0; font-size: 18px; }
 .filter-row { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-bottom: 22px; }
 .filter-row .form-field { min-width: 200px; margin: 0; }
+.save-search-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -8px 0 22px; padding: 13px 15px; border: 1px solid #dfe9e7; border-radius: 13px; background: #f7fbfa; }
+.save-search-inline > div { display: grid; gap: 3px; min-width: 190px; flex: 1; }
+.save-search-inline strong { color: var(--navy); font-size: 12px; }
+.save-search-inline span { color: var(--muted); font-size: 11px; }
+.save-search-inline input[name="name"] { width: min(100%, 230px); min-height: 38px; padding: 8px 10px; border: 1px solid #dfe5ef; border-radius: 9px; background: #fff; font-size: 12px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .product-card { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
 .product-placeholder { position: relative; height: 146px; display: grid; place-items: center; color: #a0b2d0; background: #f2f5fb; }
@@ -701,6 +706,7 @@ body:has(.admin-console) { padding-bottom: 0; }
 .reach-storefront strong, .reach-storefront span { display: block; }
 .reach-storefront strong { color: var(--navy); font-size: 12px; }
 .reach-storefront span { margin-top: 2px; color: var(--muted); font-size: 10px; }
+.reach-storefront-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .mobile-bottom-nav { display: none; }
 @media (max-width: 700px) {
   body { padding-bottom: 76px; }
@@ -711,6 +717,8 @@ body:has(.admin-console) { padding-bottom: 0; }
   .supplier-columns, .admin-columns, .order-detail-grid, .business-profile-grid { grid-template-columns: 1fr; }
   .public-share { width: 100%; }
   .public-share-url { max-width: calc(100vw - 170px); }
+  .save-search-inline { align-items: stretch; }
+  .save-search-inline > div, .save-search-inline input[name="name"], .save-search-inline .button { width: 100%; }
   .quote-row { align-items: flex-start; flex-direction: column; gap: 10px; }
   .quote-action { width: 100%; justify-content: space-between; }
   .order-row { flex-wrap: wrap; }
