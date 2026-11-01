@@ -51,7 +51,7 @@ export default async function FindStockPage({ searchParams }: Props) {
           return <article className="product-card" key={product.id}>
             <div className="product-placeholder">{imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 33vw" className="product-image" /> : <PackageSearch size={34} />}</div>
             <div className="product-detail">
-              <span className="pill">{product.condition}</span>
+              <div className="product-match-labels"><span className="pill">{product.condition}</span>{product.searchMatch ? <span className="pill pill-green">{product.searchMatch}</span> : null}</div>
               <h3>{product.name}</h3>
               <p>{[product.brand, business?.city, business?.country].filter(Boolean).join(" · ") || "Approved supplier listing"}</p>
               <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}</div>

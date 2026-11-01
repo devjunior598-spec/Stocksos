@@ -11,11 +11,66 @@ export type PublicProduct = {
   image_path: string | null;
   business_id: string;
   category_id: string;
+  created_at: string;
+  searchMatch?: string;
   inventory: { quantity_available: number; unit_price_kobo: number; currency: string } | null;
   businesses: { name: string; city: string; region: string | null; country: string; slug: string } | null;
 };
 
 export type ProductQueryResult = { products: PublicProduct[]; error: string | null };
+
+function rankProducts(
+  products: PublicProduct[],
+  search: string,
+  filters?: { categoryId?: string; country?: string; city?: string },
+): PublicProduct[] {
+  const normalize = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  const query = normalize(search);
+  const terms = query.split(/\s+/).filter((term) => term.length > 1);
+  const city = normalize(filters?.city ?? "");
+  const country = filters?.country?.trim().toUpperCase() ?? "";
+
+  return products.map((product) => {
+    const name = normalize(product.name);
+    const brand = normalize(product.brand ?? "");
+    const specifications = normalize(product.specifications ?? "");
+    const business = product.businesses;
+    const businessCity = normalize(business?.city ?? "");
+    let score = 0;
+    let searchMatch: string | undefined;
+
+    if (query && name === query) { score += 120; searchMatch = "Exact product match"; }
+    else if (query && name.includes(query)) { score += 90; searchMatch = "Product name match"; }
+
+    const nameHits = terms.filter((term) => name.includes(term)).length;
+    const brandHits = terms.filter((term) => brand.includes(term)).length;
+    const specificationHits = terms.filter((term) => specifications.includes(term)).length;
+    score += nameHits * 18 + brandHits * 10 + specificationHits * 5;
+    if (!searchMatch && nameHits) searchMatch = "Product name match";
+    if (!searchMatch && brandHits) searchMatch = "Brand match";
+    if (!searchMatch && specificationHits) searchMatch = "Specification match";
+
+    if (filters?.categoryId && product.category_id === filters.categoryId) {
+      score += 12;
+      searchMatch ??= "Category match";
+    }
+    if (city && businessCity) {
+      if (businessCity === city) { score += 30; searchMatch = "In your city"; }
+      else if (businessCity.includes(city)) { score += 18; searchMatch ??= "Near your city"; }
+    }
+    if (country && business?.country.toUpperCase() === country) {
+      score += 10;
+      searchMatch ??= "In your country";
+    }
+
+    const quantity = Math.max(0, product.inventory?.quantity_available ?? 0);
+    score += Math.min(Math.log2(quantity + 1) * 2, 10);
+
+    return { product, score, searchMatch };
+  }).sort((left, right) => right.score - left.score
+    || Date.parse(right.product.created_at) - Date.parse(left.product.created_at))
+    .map(({ product, searchMatch }) => ({ ...product, searchMatch }));
+}
 
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createSupabaseServerClient();
@@ -40,7 +95,7 @@ export async function getProductsResult(
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { products: [], error: "Supabase is not configured for this deployment." };
   let query = supabase.from("products")
-    .select("id,name,brand,condition,specifications,image_path,business_id,category_id,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,region,country,slug)")
+    .select("id,name,brand,condition,specifications,image_path,business_id,category_id,created_at,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,region,country,slug)")
     .eq("is_active", true)
     .eq("visibility", "public")
     .gt("inventory.quantity_available", 0)
@@ -62,7 +117,8 @@ export async function getProductsResult(
     console.error("Marketplace product search failed", { code: error.code, message: error.message });
     return { products: [], error: "Live stock search is temporarily unavailable. Please try again shortly." };
   }
-  return { products: (data ?? []) as unknown as PublicProduct[], error: null };
+  const products = (data ?? []) as unknown as PublicProduct[];
+  return { products: rankProducts(products, safeSearch ?? "", filters), error: null };
 }
 
 export function getMarketplaceImageUrl(path: string | null | undefined) {
