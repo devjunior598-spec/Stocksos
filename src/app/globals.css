@@ -1488,3 +1488,60 @@ textarea:focus-visible, summary:focus-visible { outline: 3px solid rgba(8, 127, 
   .product-detail p { font-size: 12px; }
   .product-price { margin-top: 11px; }
 }
+
+/* Supplier business profile setup */
+.business-application-layout {
+  width: min(100%, 1120px);
+  margin: 28px auto 76px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, .8fr);
+  align-items: start;
+  gap: 20px;
+}
+.business-application-layout > .notice { grid-column: 1 / -1; }
+.business-application-form { min-width: 0; padding: 30px; }
+.business-form-intro { margin-bottom: 26px; }
+.business-form-intro .eyebrow { margin-bottom: 8px; }
+.business-form-intro h2 { margin: 0 0 8px; color: var(--navy); font-size: 24px; letter-spacing: -.035em; }
+.business-form-intro p { max-width: 600px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.business-form-section { margin-top: 26px; }
+.business-form-section > .form-section-heading { margin-top: 0; }
+.business-application-form .location-fields { margin-top: 27px; }
+.business-application-form .location-fields .form-section-heading { margin-top: 0; }
+.business-application-form textarea { min-height: 125px; }
+.business-profile-guide { display: grid; gap: 14px; position: sticky; top: 24px; }
+.business-preview-card, .business-profile-checklist { padding: 20px; }
+.business-preview-card > .eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #28765d; }
+.business-preview-card h2 { margin: 11px 0 7px; color: var(--navy); font-size: 19px; line-height: 1.25; letter-spacing: -.025em; }
+.business-preview-card > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.business-preview-sample { display: grid; grid-template-columns: 38px minmax(0, 1fr) 16px; align-items: center; gap: 10px; margin-top: 17px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfd; }
+.business-preview-mark { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; color: #28765d; background: #e8f3ed; }
+.business-preview-sample strong, .business-preview-sample small { display: block; min-width: 0; overflow-wrap: anywhere; }
+.business-preview-sample strong { color: var(--navy); font-size: 12px; }
+.business-preview-sample small { display: flex; align-items: center; gap: 4px; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.business-preview-check { color: #228364; }
+.business-preview-links { display: grid; gap: 9px; margin-top: 13px; padding-top: 13px; border-top: 1px solid #edf0f5; }
+.business-preview-links span { display: inline-flex; align-items: center; gap: 7px; color: #52617b; font-size: 11px; }
+.business-preview-links svg, .business-profile-checklist .dashboard-section-head svg { color: #28765d; }
+.business-profile-checklist .dashboard-section-head { margin-bottom: 13px; }
+.business-profile-checklist .dashboard-section-head h2 { margin: 0; font-size: 15px; }
+.business-profile-checklist ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.business-profile-checklist li { display: flex; align-items: flex-start; gap: 8px; color: #46566e; font-size: 11px; line-height: 1.5; }
+.business-profile-checklist li svg { flex: 0 0 auto; margin-top: 1px; color: #2c8a6b; }
+.business-profile-private { display: flex; gap: 8px; margin-top: 16px; padding: 11px; border-radius: 10px; color: #536377; background: #f4f7f8; }
+.business-profile-private svg { flex: 0 0 auto; margin-top: 2px; color: #28765d; }
+.business-profile-private p { margin: 0; font-size: 10px; line-height: 1.55; }
+.business-submit-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; color: var(--muted); font-size: 10px; }
+.business-application-form .notice { margin: 22px 0 12px; }
+
+@media (max-width: 820px) {
+  .business-application-layout { grid-template-columns: 1fr; gap: 14px; }
+  .business-profile-guide { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+}
+@media (max-width: 560px) {
+  .business-application-layout { width: min(100% - 32px, 560px); margin: 18px auto 48px; }
+  .business-application-form { padding: 20px 16px; }
+  .business-profile-guide { grid-template-columns: 1fr; }
+  .business-form-intro h2 { font-size: 21px; }
+  .business-application-form .form-section-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+}
