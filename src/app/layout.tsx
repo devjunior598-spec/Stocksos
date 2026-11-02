@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 import "./globals.css";
+import "./experience.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -9,11 +10,11 @@ import { ProfileCompletionBanner } from "@/components/profile-completion-banner"
 export const metadata: Metadata = {
   metadataBase: new URL(PUBLIC_SITE_ORIGIN),
   title: {
-    default: "StockSOS — Find stock. Rescue your business.",
+    default: "StockSOS — Find stock. Keep business moving.",
     template: "%s · StockSOS",
   },
   description:
-    "Find the stock you need, sell the stock you have, and keep your business moving with StockSOS.",
+    "Search approved supplier inventory, request stock, and publish products for business buyers with StockSOS.",
   applicationName: "StockSOS",
   appleWebApp: {
     capable: true,
