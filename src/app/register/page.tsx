@@ -3,6 +3,7 @@ import { ArrowRight, Building2, ShoppingBag, UserRoundPlus } from "lucide-react"
 import { signUpAction } from "@/app/actions";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { PasswordInput } from "@/components/password-input";
+import { AuthStory } from "@/components/auth-story";
 
 type Props = { searchParams: Promise<{ error?: string; setup?: string }> };
 
@@ -10,7 +11,9 @@ export default async function RegisterPage({ searchParams }: Props) {
   const params = await searchParams;
   return (
     <section className="auth-shell">
-      <div className="form-panel">
+      <div className="auth-layout">
+        <AuthStory mode="register" />
+        <div className="form-panel">
         <div className="form-header">
           <span className="eyebrow"><UserRoundPlus size={14} /> Create your account</span>
           <h1>Keep business moving</h1>
@@ -34,6 +37,7 @@ export default async function RegisterPage({ searchParams }: Props) {
           <div className="form-bottom">Already have an account? <Link href="/login">Log in</Link></div>
         </div>
         <p className="form-bottom">By continuing, you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.</p>
+        </div>
       </div>
     </section>
   );
