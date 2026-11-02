@@ -383,3 +383,24 @@ create trigger removed_actor_enquiries before insert or update or delete on publ
   for each row execute function private.reject_removed_actor();
 create trigger removed_actor_support before insert or update or delete on public.support_cases
   for each row execute function private.reject_removed_actor();
+
+-- SECURITY DEFINER workflows can bypass RLS. Guard their destination tables
+-- too, so an unexpired token from a removed account cannot submit delivery
+-- updates or write through another privileged marketplace function.
+do $$
+declare v_table text;
+begin
+  foreach v_table in array array[
+    'business_memberships','supplier_verification_files','supplier_matches',
+    'order_groups','order_items','stock_reservations','payments','refunds',
+    'delivery_partners','deliveries','notifications','notification_jobs',
+    'business_subscriptions','saved_suppliers','reviews','audit_logs',
+    'platform_settings'
+  ] loop
+    execute format(
+      'create trigger removed_actor_%I before insert or update or delete on public.%I for each row execute function private.reject_removed_actor()',
+      v_table, v_table
+    );
+  end loop;
+end;
+$$;
