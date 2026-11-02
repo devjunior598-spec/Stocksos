@@ -27,7 +27,7 @@ The accompanying migration adds `removed_at`, `removed_by`, and reason fields to
 
 The operator must adopt a retention schedule before production use. Keep only data needed for open disputes, fraud investigations, chargebacks, tax/accounting duties or legal claims. Define routine deletion periods, legal holds, access review, export/erasure handling and backup expiry with counsel. Do not retain passwords, card data, or unnecessary identity documents. If a user requests erasure, review applicable legal obligations and claims rather than promising indefinite retention or automatic full deletion.
 
-The history trigger begins recording when the migration is applied. It cannot reconstruct edits made before that date or historical email changes in Supabase Auth. The archive UI currently displays the latest 100 removed accounts, products and matching history entries; older records remain in the database and need paginated admin search before operational rollout.
+The history trigger begins recording when the migration is applied. It cannot reconstruct edits made before that date or historical email changes in Supabase Auth. The admin archive pages through removed accounts, products, business logos and matching history in groups of 50. Administrators can look up a known account, product or business ID directly. The archive does not provide broad text search or bulk export.
 
 ## Rollout gates
 

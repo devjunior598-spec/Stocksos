@@ -278,8 +278,7 @@ begin
       p.removed_at, p.removal_reason, p.removed_by
     from public.profiles p join auth.users u on u.id = p.id
     where p.removed_at is not null
-    order by p.removed_at desc
-    limit 100;
+    order by p.removed_at desc;
 end;
 $$;
 revoke all on function public.admin_removed_accounts() from public, anon;
