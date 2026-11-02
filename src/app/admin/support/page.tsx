@@ -27,12 +27,14 @@ export default async function AdminSupportPage({ searchParams }: { searchParams:
     supabase!.from("support_cases").select("id", { count: "exact", head: true }).eq("status", "resolved"),
   ]);
   const supportCases = casesResult.data ?? [];
+  const dataUnavailable = [casesResult, openCount, progressCount, resolvedCount].some((result) => result.error);
 
   return (
     <>
       <div className="admin-page-heading"><div><span className="eyebrow"><LifeBuoy size={14} /> Support center</span><h1>Resolve customer cases.</h1><p>Review marketplace and account requests, track ownership and close resolved cases.</p></div><span className="pill pill-orange">{(openCount.count ?? 0) + (progressCount.count ?? 0)} active</span></div>
       {params.updated ? <div className="notice success-notice"><ShieldCheck size={17} /><div><strong>Case updated.</strong><p>The status change was saved and audited.</p></div></div> : null}
       {params.error ? <div className="notice error-notice"><CircleAlert size={17} /><div><strong>We couldn’t update that case.</strong><p>Refresh the queue and try again.</p></div></div> : null}
+      {dataUnavailable ? <div className="notice error-notice" role="alert"><CircleAlert size={17} /><div><strong>Support data could not be fully loaded.</strong><p>Refresh this page before updating a case.</p></div></div> : null}
 
       <div className="dashboard-grid admin-account-stats">
         <article className="stat-card"><span>Open</span><strong>{openCount.count ?? 0}</strong></article>

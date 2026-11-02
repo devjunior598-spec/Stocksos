@@ -11,12 +11,14 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
     supabase!.from("platform_settings").select("value,updated_at").eq("key", "marketplace_fee_bps").maybeSingle(),
   ]);
   const feeBps = typeof feeResult.data?.value === "number" ? feeResult.data.value : Number(feeResult.data?.value ?? 0);
+  const dataUnavailable = Boolean(plansResult.error || feeResult.error);
 
   return (
     <>
       <div className="admin-page-heading"><div><span className="eyebrow"><Settings2 size={14} /> Platform settings</span><h1>Control commercial settings.</h1><p>Manage supplier subscription plans and the platform marketplace fee from one protected workspace.</p></div><span className="pill"><ShieldCheck size={12} /> Audited changes</span></div>
       {params.error ? <div className="notice error-notice"><CircleAlert size={17} /><div><strong>The setting was not saved.</strong><p>Review the value and try again.</p></div></div> : null}
       {params.plan || params.fee ? <div className="notice success-notice"><Check size={17} /><div><strong>Settings updated.</strong><p>The change is live and recorded in the audit log.</p></div></div> : null}
+      {dataUnavailable ? <div className="notice error-notice" role="alert"><CircleAlert size={17} /><div><strong>Settings could not be fully loaded.</strong><p>Refresh before editing prices or fees.</p></div></div> : null}
 
       <div className="dashboard-columns admin-settings-columns">
         <section className="panel dashboard-section">

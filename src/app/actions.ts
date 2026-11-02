@@ -723,8 +723,9 @@ export async function adminReviewBusinessAction(formData: FormData) {
   const id = value(formData, "business_id");
   const status = value(formData, "status");
   const note = value(formData, "note");
-  if (!z.uuid().safeParse(id).success || !["approved", "rejected", "suspended"].includes(status)) {
-    redirect("/admin/accounts?error=invalid");
+  const section = value(formData, "return_to") === "directory" ? "suppliers" : "supplier-applications";
+  if (!z.uuid().safeParse(id).success || !["approved", "rejected", "suspended"].includes(status) || (status === "suspended" && !note.trim())) {
+    redirect(`/admin/accounts?error=invalid#${section}`);
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase!.rpc("admin_review_business", {
@@ -732,11 +733,13 @@ export async function adminReviewBusinessAction(formData: FormData) {
     p_status: status,
     p_note: note || null,
   });
-  if (error) redirect("/admin/accounts?error=review");
+  if (error) redirect(`/admin/accounts?error=review#${section}`);
   revalidatePath("/admin");
   revalidatePath("/admin/accounts");
   revalidatePath("/suppliers");
-  redirect("/admin/accounts?reviewed=business");
+  revalidatePath("/find-stock");
+  revalidatePath("/business/[slug]", "page");
+  redirect(`/admin/accounts?reviewed=business#${section}`);
 }
 
 export async function adminReviewAccountAction(formData: FormData) {

@@ -1,4 +1,4 @@
-import { CircleCheck, Clock3, PackageCheck, ShoppingBag, XCircle } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, PackageCheck, ShoppingBag, XCircle } from "lucide-react";
 import { formatMoney } from "@/lib/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -41,6 +41,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   ]);
 
   const orders = ordersResult.data ?? [];
+  const dataUnavailable = [ordersResult, allCount, activeCount, completedCount, exceptionCount].some((result) => result.error);
 
   return (
     <>
@@ -48,6 +49,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         <div><span className="eyebrow"><ShoppingBag size={14} /> Order operations</span><h1>Monitor every marketplace order.</h1><p>See order value, supplier, items and fulfilment status in one operational queue.</p></div>
         <span className="pill">{allCount.count ?? 0} total</span>
       </div>
+      {dataUnavailable ? <div className="notice error-notice" role="alert"><CircleAlert size={18} /><div><strong>Order data could not be fully loaded.</strong><p>Refresh before relying on these figures or the order list.</p></div></div> : null}
 
       <div className="dashboard-grid admin-account-stats">
         <article className="stat-card"><span>All orders</span><strong>{allCount.count ?? 0}</strong><ShoppingBag size={16} /></article>

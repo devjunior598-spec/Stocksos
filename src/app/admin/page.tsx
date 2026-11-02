@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, ArrowRight, BadgeCheck, CircleAlert, Settings2, ShieldCheck, ShoppingBag, Users } from "lucide-react";
+import { Activity, ArrowRight, BadgeCheck, Building2, CircleAlert, LifeBuoy, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/data";
 
@@ -7,38 +7,49 @@ function countValue(result: { count: number | null }) { return result.count ?? 0
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
-  const [accounts, pendingAccounts, approvedBusinesses, pendingBusinesses, openOrders, openSupport, recentOrders, recentAudit] = await Promise.all([
+  const [accounts, pendingAccounts, approvedBusinesses, pendingBusinesses, pendingDrivers, openOrders, openSupport, recentOrders, recentAudit] = await Promise.all([
     supabase!.from("profiles").select("id", { count: "exact", head: true }),
     supabase!.from("profiles").select("id", { count: "exact", head: true }).eq("account_status", "pending"),
     supabase!.from("businesses").select("id", { count: "exact", head: true }).eq("verification_status", "approved"),
     supabase!.from("businesses").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
+    supabase!.from("delivery_partners").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
     supabase!.from("orders").select("id", { count: "exact", head: true }).not("status", "in", "(completed,cancelled,refunded)"),
     supabase!.from("support_cases").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
     supabase!.from("orders").select("id,status,total_kobo,currency,created_at,businesses(name)").order("created_at", { ascending: false }).limit(6),
     supabase!.from("audit_logs").select("id,action,target_type,target_id,created_at,profiles(full_name)").order("created_at", { ascending: false }).limit(6),
   ]);
+  const dataUnavailable = [accounts, pendingAccounts, approvedBusinesses, pendingBusinesses, pendingDrivers, openOrders, openSupport, recentOrders, recentAudit].some((result) => result.error);
+  const attention = [
+    { href: "/admin/accounts?status=pending", label: "Account approvals", count: countValue(pendingAccounts), icon: Users, detail: "Review new buyers and suppliers" },
+    { href: "/admin/accounts#supplier-applications", label: "Business reviews", count: countValue(pendingBusinesses), icon: Building2, detail: "Verify supplier businesses" },
+    { href: "/admin/accounts#delivery-applications", label: "Delivery applications", count: countValue(pendingDrivers), icon: Truck, detail: "Review delivery partners" },
+    { href: "/admin/support", label: "Support cases", count: countValue(openSupport), icon: LifeBuoy, detail: "Respond to open requests" },
+  ];
 
   return (
     <>
       <div className="dashboard-top">
-        <div><span className="eyebrow"><ShieldCheck size={14} /> Platform administration</span><h1>Marketplace control center.</h1><p className="muted">Review accounts, monitor orders, resolve support cases and manage platform settings from dedicated pages.</p></div>
+        <div><span className="eyebrow"><ShieldCheck size={14} /> Platform administration</span><h1>Good day, admin.</h1><p className="muted">Start with items that need a decision, then review marketplace activity below.</p></div>
         <span className="pill pill-green"><BadgeCheck size={12} /> Admin access</span>
       </div>
+      {dataUnavailable ? <div className="notice error-notice" role="alert"><CircleAlert size={18} /><div><strong>Some dashboard data could not be loaded.</strong><p>Refresh this page before making an operational decision.</p></div></div> : null}
 
+      <section className="admin-attention-section" aria-labelledby="admin-attention-title">
+        <div className="dashboard-section-head"><div><span className="eyebrow">Today&apos;s work</span><h2 id="admin-attention-title">Needs your attention</h2></div><span className="pill pill-orange">{attention.reduce((total, item) => total + item.count, 0)} waiting</span></div>
+        <div className="admin-attention-grid">
+          {attention.map(({ href, label, count, icon: Icon, detail }) => <Link className="admin-attention-card" href={href} key={href}>
+            <span className="admin-attention-icon"><Icon size={20} /></span>
+            <span><strong>{count}</strong><b>{label}</b><small>{detail}</small></span>
+            <ArrowRight size={17} className="admin-attention-arrow" />
+          </Link>)}
+        </div>
+      </section>
+
+      <div className="dashboard-section-head admin-snapshot-heading"><h2>Marketplace snapshot</h2><Link className="text-link" href="/admin/activity">Activity log <ArrowRight size={14} /></Link></div>
       <div className="dashboard-grid admin-summary-grid">
         <article className="stat-card"><span>Registered accounts</span><strong>{countValue(accounts)}</strong><Link href="/admin/accounts">Open accounts <ArrowRight size={13} /></Link></article>
-        <article className="stat-card"><span>Pending accounts</span><strong>{countValue(pendingAccounts)}</strong><Link href="/admin/accounts?status=pending">Review queue <ArrowRight size={13} /></Link></article>
         <article className="stat-card"><span>Approved suppliers</span><strong>{countValue(approvedBusinesses)}</strong><Link href="/admin/accounts#suppliers">Supplier directory <ArrowRight size={13} /></Link></article>
-        <article className="stat-card"><span>Pending businesses</span><strong>{countValue(pendingBusinesses)}</strong><Link href="/admin/accounts#supplier-applications">Review applications <ArrowRight size={13} /></Link></article>
         <article className="stat-card"><span>Active orders</span><strong>{countValue(openOrders)}</strong><Link href="/admin/orders">Open orders <ArrowRight size={13} /></Link></article>
-        <article className="stat-card"><span>Open support cases</span><strong>{countValue(openSupport)}</strong><Link href="/admin/support">Open support <ArrowRight size={13} /></Link></article>
-      </div>
-
-      <div className="admin-page-links" aria-label="Admin workspaces">
-        <Link href="/admin/accounts"><span className="feature-icon"><Users size={20} /></span><strong>Accounts & approvals</strong><small>Approve or reject buyer accounts, supplier accounts and business applications.</small><span>Manage accounts <ArrowRight size={14} /></span></Link>
-        <Link href="/admin/orders"><span className="feature-icon"><ShoppingBag size={20} /></span><strong>Order operations</strong><small>See every marketplace order, value, supplier and current fulfilment status.</small><span>View orders <ArrowRight size={14} /></span></Link>
-        <Link href="/admin/support"><span className="feature-icon"><CircleAlert size={20} /></span><strong>Support center</strong><small>Work through open, in-progress, resolved and closed customer cases.</small><span>Handle support <ArrowRight size={14} /></span></Link>
-        <Link href="/admin/settings"><span className="feature-icon"><Settings2 size={20} /></span><strong>Platform settings</strong><small>Manage subscription plans and the configured marketplace fee.</small><span>Open settings <ArrowRight size={14} /></span></Link>
       </div>
 
       <div className="dashboard-columns admin-columns">

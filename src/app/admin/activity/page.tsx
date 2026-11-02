@@ -1,9 +1,9 @@
-import { Activity, ShieldCheck } from "lucide-react";
+import { Activity, CircleAlert, ShieldCheck } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function AdminActivityPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: entries } = await supabase!.from("audit_logs")
+  const { data: entries, error } = await supabase!.from("audit_logs")
     .select("id,action,target_type,target_id,details,created_at,profiles(full_name)")
     .order("created_at", { ascending: false })
     .limit(100);
@@ -11,6 +11,7 @@ export default async function AdminActivityPage() {
   return (
     <>
       <div className="admin-page-heading"><div><span className="eyebrow"><Activity size={14} /> Audit activity</span><h1>Trace administrative changes.</h1><p>Review recent account decisions, business approvals, support updates and platform configuration changes.</p></div><span className="pill"><ShieldCheck size={12} /> Admin only</span></div>
+      {error ? <div className="notice error-notice" role="alert"><CircleAlert size={18} /><div><strong>Activity could not be loaded.</strong><p>Refresh the page to view recent changes.</p></div></div> : null}
       <section className="panel dashboard-section">
         <div className="dashboard-section-head"><h2>Recent audit log</h2><Activity size={18} color="#087f71" /></div>
         {entries?.length ? <div className="admin-activity-list">{entries.map((entry) => {
