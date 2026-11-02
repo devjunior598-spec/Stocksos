@@ -31,7 +31,8 @@ The history trigger begins recording when the migration is applied. It cannot re
 
 ## Rollout gates
 
-- Review and apply `20261102091122_retain_removed_marketplace_records.sql` to a nonproduction Supabase project; test owner/admin/other-user RLS and Storage access with separate accounts. A temporary Supabase branch could not be created on the current plan, so this database test remains outstanding.
+- The migration was applied to an isolated PGlite fixture on 2026-11-02. Fixture checks passed for supplier removal, outsider denial, admin-only account removal and archive reads, retained profile/product history, private bucket configuration, selected-supplier matching, notification cleanup, and stale-product SOS rejection. A read-only production schema check found the expected predecessor migrations, tables and columns. This is a SQL fixture check, not a hosted Supabase Auth or Storage test.
+- Apply `20261102091122_retain_removed_marketplace_records.sql` to a nonproduction Supabase project; test owner/admin/other-user RLS, Auth banning and Storage copy/deletion with separate accounts. A temporary Supabase branch could not be created on the current plan, so this end-to-end database test remains outstanding.
 - Verify that a product-page SOS notifies only the selected supplier, including when the buyer lives in another city, and that a stale or out-of-stock listing fails without creating a request.
 - Reconcile existing products with missing or invalid media paths; the archive action intentionally fails closed when evidence cannot be copied.
 - Review this retention design with counsel and publish updated privacy/terms language before enabling removal.
