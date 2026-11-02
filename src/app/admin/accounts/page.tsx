@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { BadgeCheck, Building2, ShieldCheck, Truck, UserCheck, Users } from "lucide-react";
-import { adminReviewAccountAction, adminReviewBusinessAction, adminReviewDeliveryPartnerAction } from "@/app/actions";
+import { adminRemoveMarketplaceAccountAction, adminReviewAccountAction, adminReviewBusinessAction, adminReviewDeliveryPartnerAction } from "@/app/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 
-type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
+type AccountStatus = "pending" | "approved" | "rejected" | "suspended" | "removed";
 
-const statusPriority: Record<AccountStatus, number> = { pending: 0, rejected: 1, suspended: 2, approved: 3 };
+const statusPriority: Record<AccountStatus, number> = { pending: 0, rejected: 1, suspended: 2, approved: 3, removed: 4 };
 
 export default async function AdminAccountsPage({ searchParams }: { searchParams: Promise<{ q?: string; role?: string; status?: string; business_q?: string; business_status?: string; error?: string; reviewed?: string }> }) {
   const params = await searchParams;
   const search = params.q?.trim().replace(/[,%()]/g, "").slice(0, 80) ?? "";
   const role = params.role === "buyer" || params.role === "supplier" ? params.role : "all";
-  const status = ["pending", "approved", "rejected", "suspended"].includes(params.status ?? "") ? params.status as AccountStatus : "all";
+  const status = ["pending", "approved", "rejected", "suspended", "removed"].includes(params.status ?? "") ? params.status as AccountStatus : "all";
   const businessSearch = params.business_q?.trim().replace(/[%_\\]/g, "").slice(0, 80) ?? "";
   const businessStatus = ["pending", "approved", "rejected", "suspended"].includes(params.business_status ?? "") ? params.business_status! : "all";
   const supabase = await createSupabaseServerClient();
@@ -48,7 +49,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
   return (
     <>
       <div className="admin-page-heading"><div><span className="eyebrow"><Users size={14} /> Accounts & approvals</span><h1>Review who can use the marketplace.</h1><p>Approve or reject buyer and supplier accounts, then separately verify supplier businesses before their inventory becomes public.</p></div><span className="pill pill-orange">{pendingCount.count ?? 0} pending</span></div>
-      {params.error ? <div className="notice error-notice"><div><strong>The review was not saved.</strong><p>Check the account or application and try again.</p></div></div> : null}
+      {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "evidence" ? "Account removal stopped before changing the account." : params.error === "shared_owner" ? "Transfer shared business ownership first." : params.error === "ban_pending" || params.error === "media_cleanup" ? "Account removed, but protection needs attention." : "The action was not completed."}</strong><p>{params.error === "evidence" ? "A product photo, video or logo could not be copied to private storage. Check the media and retry." : params.error === "shared_owner" ? "This account co-owns a business. Transfer that ownership before removing it." : params.error === "ban_pending" || params.error === "media_cleanup" ? "Open Removed records and retry the account ban or public media cleanup." : "Check the account or application and try again."}</p></div></div> : null}
       {params.reviewed ? <div className="notice success-notice"><div><strong>Review saved.</strong><p>The account owner was notified and the action was added to the audit log.</p></div></div> : null}
       {dataUnavailable ? <div className="notice error-notice" role="alert"><div><strong>Some account data could not be loaded.</strong><p>Refresh the page before reviewing accounts or businesses.</p></div></div> : null}
 
@@ -64,7 +65,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
         <form className="admin-filter-bar" action="/admin/accounts">
           <input name="q" defaultValue={search} placeholder="Search name, phone or city" aria-label="Search accounts" />
           <select name="role" defaultValue={role} aria-label="Filter by account type"><option value="all">All account types</option><option value="buyer">Buyers</option><option value="supplier">Suppliers</option></select>
-          <select name="status" defaultValue={status} aria-label="Filter by review status"><option value="all">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option></select>
+          <select name="status" defaultValue={status} aria-label="Filter by review status"><option value="all">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option><option value="removed">Removed</option></select>
           <button className="button button-secondary button-small" type="submit">Apply filters</button>
         </form>
         {accounts.length ? <div className="admin-account-list">{accounts.map((account) => (
@@ -74,7 +75,7 @@ export default async function AdminAccountsPage({ searchParams }: { searchParams
               <small>Joined {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(account.created_at))}</small>
             </div>
             {account.account_review_note ? <p className="admin-review-note"><strong>Latest review note:</strong> {account.account_review_note}</p> : null}
-            {account.platform_role === "admin" ? <div className="notice"><ShieldCheck size={17} /><div><strong>Administrator account</strong><p>Administrator access cannot be changed from this review queue.</p></div></div> : <form className="admin-action-row" action={adminReviewAccountAction}><input type="hidden" name="user_id" value={account.id} /><input name="note" maxLength={500} placeholder="Optional note for the account owner" aria-label={`Review note for ${account.full_name || "account"}`} />{account.account_status !== "approved" ? <button className="button button-primary button-small" name="status" value="approved" type="submit">Approve</button> : null}{account.account_status !== "rejected" ? <button className="button button-danger button-small" name="status" value="rejected" type="submit">Reject</button> : null}{account.account_status !== "suspended" && account.account_status !== "pending" ? <button className="button button-secondary button-small" name="status" value="suspended" type="submit">Suspend</button> : null}</form>}
+            {account.platform_role !== "user" ? <div className="notice"><ShieldCheck size={17} /><div><strong>Staff account</strong><p>Staff access cannot be changed from this review queue.</p></div></div> : account.account_status === "removed" ? <Link className="text-link" href="/admin/removed">View retained record</Link> : <><form className="admin-action-row" action={adminReviewAccountAction}><input type="hidden" name="user_id" value={account.id} /><input name="note" maxLength={500} placeholder="Optional note for the account owner" aria-label={`Review note for ${account.full_name || "account"}`} />{account.account_status !== "approved" ? <button className="button button-primary button-small" name="status" value="approved" type="submit">Approve</button> : null}{account.account_status !== "rejected" ? <button className="button button-danger button-small" name="status" value="rejected" type="submit">Reject</button> : null}{account.account_status !== "suspended" && account.account_status !== "pending" ? <button className="button button-secondary button-small" name="status" value="suspended" type="submit">Suspend</button> : null}</form><form className="admin-action-row" action={adminRemoveMarketplaceAccountAction}><input type="hidden" name="user_id" value={account.id} /><input name="reason" minLength={10} maxLength={500} required placeholder="Reason for removal (required)" aria-label={`Removal reason for ${account.full_name || "account"}`} /><ConfirmDeleteButton message="Remove this account from StockSOS? Its records will be retained privately for authorized review.">Remove account</ConfirmDeleteButton></form></>}
           </article>
         ))}</div> : <div className="empty-state"><Users className="empty-state-icon" /><h3>No matching accounts</h3><p>Try changing the role, status or search filters.</p></div>}
       </section>

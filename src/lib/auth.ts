@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AuthenticatedUser = { id: string; email: string | null; signupPhone: string | null; verifiedPhone: string | null };
 export type MarketplaceRole = "buyer" | "supplier";
-export type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
+export type AccountStatus = "pending" | "approved" | "rejected" | "suspended" | "removed";
 
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
   const supabase = await createSupabaseServerClient();
@@ -42,7 +42,7 @@ export async function getAccountStatus(userId: string): Promise<AccountStatus | 
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data } = await supabase.from("profiles").select("account_status").eq("id", userId).maybeSingle();
-  return ["pending", "approved", "rejected", "suspended"].includes(data?.account_status)
+  return ["pending", "approved", "rejected", "suspended", "removed"].includes(data?.account_status)
     ? data!.account_status as AccountStatus
     : null;
 }
@@ -65,7 +65,7 @@ export async function requireUser(options: { allowAdmin?: boolean; allowPending?
   if (platformRole !== "admin") {
     const accountStatus = await getAccountStatus(user.id);
     // A null status keeps rolling deployments compatible until the migration is applied.
-    if (accountStatus && accountStatus !== "approved" && !options.allowPending) redirect("/account-status");
+    if (accountStatus === "removed" || (accountStatus && accountStatus !== "approved" && !options.allowPending)) redirect("/account-status");
   }
   if (!options.allowAdmin && platformRole === "admin") redirect("/admin");
   return user;

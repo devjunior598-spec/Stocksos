@@ -19,9 +19,12 @@ export default async function AccountStatusPage() {
 
   const rejected = profile.account_status === "rejected";
   const suspended = profile.account_status === "suspended";
-  const Icon = suspended ? ShieldAlert : rejected ? CircleAlert : Clock3;
-  const title = suspended ? "Your account is suspended" : rejected ? "Your application needs attention" : "Your account is awaiting approval";
-  const message = suspended
+  const removed = profile.account_status === "removed";
+  const Icon = suspended || removed ? ShieldAlert : rejected ? CircleAlert : Clock3;
+  const title = removed ? "Your marketplace account was removed" : suspended ? "Your account is suspended" : rejected ? "Your application needs attention" : "Your account is awaiting approval";
+  const message = removed
+    ? "You can no longer use this account on StockSOS. Contact support if you believe this is a mistake or need to request access to your information."
+    : suspended
     ? "Marketplace access is paused. Contact StockSOS support if you believe this was a mistake."
     : rejected
       ? "An administrator reviewed your application and could not approve it yet."

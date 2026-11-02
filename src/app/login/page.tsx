@@ -30,7 +30,7 @@ export default async function LoginPage({ searchParams }: Props) {
             <PasswordInput autoComplete="current-password" />
             <div className="form-bottom" style={{ textAlign: "right", margin: "0 0 16px" }}><Link href="/forgot-password">Forgot password?</Link></div>
             <button className="button button-primary form-submit" type="submit">Log in <ArrowRight size={16} /></button>
-          </form>} phoneForm={<PhoneOtpLogin />} />
+          </form>} phoneForm={<PhoneOtpLogin next={params.next} />} />
           <div className="form-bottom">New to StockSOS? <Link href="/register">Create an account</Link></div>
         </div>
         </div>

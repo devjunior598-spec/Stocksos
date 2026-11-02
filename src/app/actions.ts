@@ -12,6 +12,9 @@ import { isMarketplaceImagePathForBusiness, isMarketplaceMediaPathForBusiness } 
 import { isDisposableEmail } from "@/lib/disposable-email";
 import { hasSpecificProductTitle } from "@/lib/product-quality";
 import { consumeRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
+import { preserveBusinessLogos, preserveProductMedia, removePublicArchivedMedia } from "@/lib/marketplace-evidence";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { safeNextPath } from "@/lib/safe-next-path";
 
 function value(formData: FormData, name: string) {
   const raw = formData.get(name);
@@ -61,7 +64,7 @@ export async function signInAction(formData: FormData) {
   if (error) redirect("/login?error=invalid");
   await supabase.rpc("clear_login_account_lockout");
   revalidatePath("/", "layout");
-  redirect(await getAccountHome(signInData.user.id));
+  redirect(safeNextPath(value(formData, "next")) ?? await getAccountHome(signInData.user.id));
 }
 
 export async function requestPhoneLoginOtpAction(_previous: PhoneOtpActionState, formData: FormData): Promise<PhoneOtpActionState> {
@@ -112,7 +115,7 @@ export async function verifyPhoneLoginOtpAction(_previous: PhoneOtpActionState, 
   if (error || !data.user) return { status: "error", message: "That code is incorrect or expired. Request a new code and try again." };
   await supabase.rpc("clear_login_account_lockout");
   revalidatePath("/", "layout");
-  redirect(await getAccountHome(data.user.id));
+  redirect(safeNextPath(value(formData, "next")) ?? await getAccountHome(data.user.id));
 }
 
 export async function requestPhoneChangeOtpAction(_previous: PhoneOtpActionState, formData: FormData): Promise<PhoneOtpActionState> {
@@ -392,6 +395,7 @@ export async function createBusinessApplicationAction(formData: FormData) {
 export async function createSOSAction(formData: FormData) {
   await requireBuyer();
   const parsed = z.object({
+    productId: z.union([z.uuid(), z.literal("")]),
     categoryId: z.uuid(),
     productName: z.string().trim().min(2).max(180),
     quantity: z.coerce.number().int().min(1).max(1000000),
@@ -408,6 +412,7 @@ export async function createSOSAction(formData: FormData) {
     scheduledAt: z.string().optional(),
     notes: z.string().trim().max(1000).optional(),
   }).safeParse({
+    productId: value(formData, "product_id"),
     categoryId: value(formData, "category_id"),
     productName: value(formData, "product_name"),
     quantity: value(formData, "quantity"),
@@ -432,7 +437,7 @@ export async function createSOSAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const notes = [parsed.data.address ? `Delivery address: ${parsed.data.address}` : "", parsed.data.notes]
     .filter(Boolean).join("\n");
-  const { data: requestId, error } = await supabase!.rpc("create_sos_request", {
+  const requestArgs = {
     p_category_id: parsed.data.categoryId,
     p_product_name: parsed.data.productName,
     p_quantity: parsed.data.quantity,
@@ -448,7 +453,10 @@ export async function createSOSAction(formData: FormData) {
     p_scheduled_at: schedule?.toISOString() ?? null,
     p_notes: notes || null,
     p_photo_path: null,
-  });
+  };
+  const { data: requestId, error } = parsed.data.productId
+    ? await supabase!.rpc("create_product_sos_request", { ...requestArgs, p_product_id: parsed.data.productId })
+    : await supabase!.rpc("create_sos_request", requestArgs);
   if (error || !requestId) redirect("/sos?error=save");
   revalidatePath("/dashboard");
   redirect("/dashboard?request=created");
@@ -678,44 +686,183 @@ export async function deleteSupplierProductAction(formData: FormData) {
   if (!z.uuid().safeParse(productId).success) redirect("/supplier?error=product");
   const supabase = await createSupabaseServerClient();
   const { data: product } = await supabase!.from("products")
-    .select("business_id,image_path,media_paths").eq("id", productId).maybeSingle();
+    .select("id,business_id,image_path,media_paths,removed_at").eq("id", productId).maybeSingle();
   if (!product) redirect("/supplier?error=product");
   const { data: membership } = await supabase!.from("business_memberships")
     .select("role").eq("business_id", product.business_id).eq("user_id", user.id).maybeSingle();
   if (!membership || !["owner", "admin"].includes(membership.role)) redirect("/supplier?error=delete");
 
-  const references = await Promise.all([
-    supabase!.from("order_items").select("id", { count: "exact", head: true }).eq("product_id", productId),
-    supabase!.from("quotations").select("id", { count: "exact", head: true }).eq("product_id", productId),
-    supabase!.from("stock_reservations").select("id", { count: "exact", head: true }).eq("product_id", productId),
-  ]);
-  const hasHistory = references.some((reference) => reference.error || (reference.count ?? 0) > 0);
-  if (hasHistory) {
-    const { error } = await supabase!.from("products").update({ is_active: false, visibility: "private" }).eq("id", productId);
-    if (error) redirect("/supplier?error=delete");
-    revalidatePath("/supplier");
-    revalidatePath("/find-stock");
-    revalidatePath("/suppliers");
-    redirect("/supplier?product=archived");
-  }
-
-  const { error } = await supabase!.from("products").delete().eq("id", productId);
-  if (error) {
-    const { error: archiveError } = await supabase!.from("products")
-      .update({ is_active: false, visibility: "private" }).eq("id", productId);
-    if (archiveError) redirect("/supplier?error=delete");
-    revalidatePath("/supplier");
-    revalidatePath("/find-stock");
-    revalidatePath("/suppliers");
-    redirect("/supplier?product=archived");
-  }
-  const mediaPaths = [...new Set([product.image_path, ...(product.media_paths ?? [])].filter((path): path is string => Boolean(path)))];
-  if (mediaPaths.length) await supabase!.storage.from("marketplace-images").remove(mediaPaths);
+  if (product.removed_at) redirect("/supplier/marketplace?product=archived");
+  let copied: Awaited<ReturnType<typeof preserveProductMedia>>;
+  try { copied = await preserveProductMedia([product]); }
+  catch { redirect("/supplier/marketplace?error=evidence"); }
+  const { error } = await supabase!.rpc("remove_supplier_product", { p_product_id: productId });
+  if (error) redirect("/supplier/marketplace?error=delete");
   revalidatePath("/supplier");
+  revalidatePath("/supplier/marketplace");
   revalidatePath("/find-stock");
   revalidatePath("/suppliers");
   revalidatePath("/business/[slug]", "page");
-  redirect("/supplier?product=deleted");
+  revalidatePath("/admin/removed");
+  try { await removePublicArchivedMedia(copied); }
+  catch { redirect("/supplier/marketplace?error=media_cleanup"); }
+  redirect("/supplier/marketplace?product=archived");
+}
+
+export async function adminRemoveSupplierProductAction(formData: FormData) {
+  await requireAdmin();
+  const productId = value(formData, "product_id");
+  const reason = value(formData, "reason");
+  if (!z.uuid().safeParse(productId).success || reason.length < 10 || reason.length > 500) {
+    redirect("/admin/products?error=invalid");
+  }
+  const supabase = await createSupabaseServerClient();
+  const { data: product, error: productError } = await supabase!.from("products")
+    .select("id,business_id,image_path,media_paths,removed_at")
+    .eq("id", productId).maybeSingle();
+  if (productError || !product || product.removed_at) redirect("/admin/products?error=invalid");
+  let copied: Awaited<ReturnType<typeof preserveProductMedia>>;
+  try { copied = await preserveProductMedia([product]); }
+  catch { redirect("/admin/products?error=evidence"); }
+  const { error } = await supabase!.rpc("remove_supplier_product", {
+    p_product_id: productId, p_reason: reason,
+  });
+  if (error) redirect("/admin/products?error=remove");
+  revalidatePath("/admin/products");
+  revalidatePath("/admin/removed");
+  revalidatePath("/supplier/marketplace");
+  revalidatePath("/find-stock");
+  revalidatePath("/business/[slug]", "page");
+  try { await removePublicArchivedMedia(copied); }
+  catch { redirect("/admin/products?error=media_cleanup"); }
+  redirect("/admin/products?removed=1");
+}
+
+export async function adminRemoveMarketplaceAccountAction(formData: FormData) {
+  await requireAdmin();
+  const userId = value(formData, "user_id");
+  const reason = value(formData, "reason");
+  if (!z.uuid().safeParse(userId).success || reason.length < 10 || reason.length > 500) {
+    redirect("/admin/accounts?error=remove_invalid");
+  }
+  const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
+  if (!supabase || !admin) redirect("/admin/accounts?error=remove_setup");
+  const { data: account, error: accountError } = await supabase.from("profiles")
+    .select("id,platform_role,removed_at").eq("id", userId).maybeSingle();
+  if (accountError || !account || account.platform_role !== "user" || account.removed_at) {
+    redirect("/admin/accounts?error=remove_invalid");
+  }
+  const { data: memberships, error: membershipsError } = await supabase.from("business_memberships")
+    .select("business_id").eq("user_id", userId).eq("role", "owner");
+  if (membershipsError) redirect("/admin/accounts?error=remove_data");
+  const businessIds = (memberships ?? []).map((item) => item.business_id);
+  if (businessIds.length) {
+    const { data: owners, error: ownersError } = await admin.from("business_memberships")
+      .select("business_id,user_id").in("business_id", businessIds).eq("role", "owner");
+    if (ownersError) redirect("/admin/accounts?error=remove_data");
+    const otherOwnerIds = [...new Set((owners ?? []).filter((owner) => owner.user_id !== userId).map((owner) => owner.user_id))];
+    if (otherOwnerIds.length) {
+      const { data: otherProfiles, error: profilesError } = await admin.from("profiles")
+        .select("id,removed_at").in("id", otherOwnerIds);
+      if (profilesError) redirect("/admin/accounts?error=remove_data");
+      if (otherProfiles?.some((profile) => !profile.removed_at)) redirect("/admin/accounts?error=shared_owner");
+    }
+  }
+  const businessesResult = businessIds.length ? await supabase.from("businesses")
+    .select("id,logo_path").in("id", businessIds) : { data: [], error: null };
+  if (businessesResult.error) redirect("/admin/accounts?error=remove_data");
+  const productsResult = businessIds.length ? await supabase.from("products")
+    .select("id,business_id,image_path,media_paths").in("business_id", businessIds).is("removed_at", null).limit(201)
+    : { data: [], error: null };
+  if (productsResult.error || (productsResult.data?.length ?? 0) > 200) {
+    redirect("/admin/accounts?error=remove_data");
+  }
+  let copied: Awaited<ReturnType<typeof preserveProductMedia>>;
+  try {
+    const productMedia = await preserveProductMedia(productsResult.data ?? []);
+    const businessMedia = await preserveBusinessLogos(businessesResult.data ?? []);
+    copied = [...productMedia, ...businessMedia];
+  }
+  catch { redirect("/admin/accounts?error=evidence"); }
+  const { error } = await supabase.rpc("admin_remove_marketplace_account", {
+    p_user_id: userId, p_reason: reason,
+  });
+  if (error) redirect("/admin/accounts?error=remove_data");
+  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/removed");
+  revalidatePath("/find-stock");
+  revalidatePath("/suppliers");
+  revalidatePath("/business/[slug]", "page");
+  const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
+  let mediaCleanupFailed = false;
+  try { await removePublicArchivedMedia(copied); }
+  catch { mediaCleanupFailed = true; }
+  if (banError) redirect("/admin/accounts?error=ban_pending");
+  if (mediaCleanupFailed) redirect("/admin/accounts?error=media_cleanup");
+  redirect("/admin/removed?removed=account");
+}
+
+export async function adminRetryRemovalProtectionAction(formData: FormData) {
+  const adminUser = await requireAdmin();
+  const id = value(formData, "record_id");
+  const kind = value(formData, "record_kind");
+  if (!z.uuid().safeParse(id).success || !["account", "product"].includes(kind)) {
+    redirect("/admin/removed?error=invalid");
+  }
+  const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
+  if (!supabase || !admin) redirect("/admin/removed?error=setup");
+  let productIds: string[] = [];
+  let businessIds: string[] = [];
+  if (kind === "product") {
+    const { data } = await supabase.from("products").select("id").eq("id", id).not("removed_at", "is", null).maybeSingle();
+    if (!data) redirect("/admin/removed?error=invalid");
+    productIds = [id];
+  } else {
+    const { data: profile } = await supabase.from("profiles").select("id").eq("id", id).not("removed_at", "is", null).maybeSingle();
+    if (!profile) redirect("/admin/removed?error=invalid");
+    const { data: memberships, error: membershipError } = await supabase.from("business_memberships")
+      .select("business_id").eq("user_id", id).eq("role", "owner");
+    if (membershipError) redirect("/admin/removed?error=data");
+    businessIds = (memberships ?? []).map((item) => item.business_id);
+    if (businessIds.length) {
+      const { data: products, error: productsError } = await supabase.from("products")
+        .select("id").in("business_id", businessIds).not("removed_at", "is", null).limit(1000);
+      if (productsError || (products?.length ?? 0) >= 1000) redirect("/admin/removed?error=data");
+      productIds = (products ?? []).map((item) => item.id);
+    }
+  }
+  if (productIds.length || businessIds.length) {
+    const [productMedia, businessMedia] = await Promise.all([
+      productIds.length ? supabase.from("removal_media")
+        .select("product_id,business_id,original_path,evidence_path").in("product_id", productIds).limit(1000)
+        : Promise.resolve({ data: [], error: null }),
+      businessIds.length ? supabase.from("removal_media")
+        .select("product_id,business_id,original_path,evidence_path").in("business_id", businessIds).limit(1000)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (productMedia.error || businessMedia.error || (productMedia.data?.length ?? 0) >= 1000 || (businessMedia.data?.length ?? 0) >= 1000) redirect("/admin/removed?error=data");
+    try {
+      await removePublicArchivedMedia([...(productMedia.data ?? []), ...(businessMedia.data ?? [])].map((item) => ({
+        productId: item.product_id ?? undefined, businessId: item.business_id ?? undefined,
+        originalPath: item.original_path, evidencePath: item.evidence_path,
+      })));
+    } catch { redirect("/admin/removed?error=cleanup"); }
+  }
+  if (kind === "account") {
+    const { error } = await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" });
+    if (error) redirect("/admin/removed?error=ban");
+  }
+  const { error: auditError } = await admin.from("audit_logs").insert({
+    actor_id: adminUser.id,
+    action: "removal_protection_retried",
+    target_type: kind === "account" ? "profile" : "product",
+    target_id: id,
+    details: {},
+  });
+  if (auditError) redirect("/admin/removed?error=audit");
+  redirect("/admin/removed?protected=1");
 }
 
 export async function adminReviewBusinessAction(formData: FormData) {

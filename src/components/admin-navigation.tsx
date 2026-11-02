@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Home, LifeBuoy, Settings2, ShoppingBag, Users } from "lucide-react";
+import { Activity, Archive, Home, LifeBuoy, Package, Settings2, ShoppingBag, Users } from "lucide-react";
 
 const items = [
   { href: "/admin", label: "Overview", icon: Home },
   { href: "/admin/accounts", label: "Accounts", icon: Users },
+  { href: "/admin/products", label: "Listings", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/support", label: "Support", icon: LifeBuoy },
   { href: "/admin/activity", label: "Activity", icon: Activity },
+  { href: "/admin/removed", label: "Removed records", icon: Archive },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },
 ];
 

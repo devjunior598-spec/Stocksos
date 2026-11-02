@@ -10,7 +10,7 @@ import {
 
 const initialState: PhoneOtpActionState = { status: "idle", message: "" };
 
-export function PhoneOtpLogin() {
+export function PhoneOtpLogin({ next = "" }: { next?: string }) {
   const [phone, setPhone] = useState("");
   const [sendState, sendAction, sending] = useActionState(requestPhoneLoginOtpAction, initialState);
   const [verifyState, verifyAction, verifying] = useActionState(verifyPhoneLoginOtpAction, initialState);
@@ -25,6 +25,7 @@ export function PhoneOtpLogin() {
       </form>
       {sendState.status === "sent" ? <form className="phone-otp-verify" action={verifyAction}>
         <input type="hidden" name="phone" value={phone} />
+        <input type="hidden" name="next" value={next} />
         <div className="form-field"><label htmlFor="login_phone_code">Six-digit verification code</label><input id="login_phone_code" name="token" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required /></div>
         {verifyState.message ? <p className={verifyState.status === "error" ? "phone-otp-message error" : "phone-otp-message"} role="status" aria-live="polite">{verifyState.message}</p> : null}
         <button className="button button-primary form-submit" type="submit" disabled={verifying}><KeyRound size={15} />{verifying ? "Verifying…" : "Verify and sign in"}</button>
