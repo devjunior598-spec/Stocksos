@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, LayoutDashboard, Megaphone, Search, Settings, ShieldAlert, Store } from "lucide-react";
+import { Boxes, ClipboardList, LayoutDashboard, Package, Search, ShieldAlert, Store } from "lucide-react";
 import { getAuthenticatedUser, getMarketplaceRole, getPlatformRole } from "@/lib/auth";
 
 export async function MobileBottomNav() {
@@ -8,9 +8,9 @@ export async function MobileBottomNav() {
   const role = user ? await getMarketplaceRole(user.id) : null;
   if (role === "supplier") return <nav className="mobile-bottom-nav" aria-label="Supplier quick navigation">
     <Link href="/supplier"><Store size={18} /><span>Workspace</span></Link>
-    <Link href="/supplier/reach"><Megaphone size={18} /><span>Reach</span></Link>
-    <Link href="/pricing"><Boxes size={18} /><span>Plans</span></Link>
-    <Link href="/onboarding"><Settings size={18} /><span>Settings</span></Link>
+    <Link href="/supplier/marketplace"><Package size={18} /><span>Products</span></Link>
+    <Link href="/supplier/requests"><ClipboardList size={18} /><span>Requests</span></Link>
+    <Link href="/supplier/orders"><Boxes size={18} /><span>Orders</span></Link>
   </nav>;
   if (role === "buyer") return <nav className="mobile-bottom-nav" aria-label="Buyer quick navigation">
     <Link href="/find-stock"><Search size={18} /><span>Browse</span></Link>
