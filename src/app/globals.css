@@ -844,6 +844,18 @@ body:has(.admin-console) { padding-bottom: 0; }
 .supplier-help-card > .text-link, .supplier-secondary-link { display: flex; align-items: center; gap: 7px; color: var(--green); font-size: 11px; font-weight: 700; text-decoration: none; }
 .supplier-secondary-link { margin-top: 13px; padding-top: 13px; color: #63718a; border-top: 1px solid var(--line); }
 .supplier-stats { margin-top: 15px; }
+.supplier-stock-attention { margin-top: 18px; }
+.supplier-stock-attention .dashboard-section-head > svg { color: #c77c1b; }
+.supplier-stock-attention-list { display: grid; gap: 0; margin: 2px 0 12px; }
+.supplier-stock-attention-list > a { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; color: var(--navy); border-bottom: 1px solid var(--line); text-decoration: none; }
+.supplier-stock-attention-list > a:last-child { border-bottom: 0; }
+.supplier-stock-attention-list > a > span:first-child { min-width: 0; display: grid; gap: 3px; }
+.supplier-stock-attention-list strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.supplier-stock-attention-list small { color: #9b5b18; font-size: 11px; }
+.supplier-stock-attention-list .text-link { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; font-size: 11px; }
+.supplier-more-stock-tasks summary { width: fit-content; color: var(--green); cursor: pointer; font-size: 11px; font-weight: 700; }
+.supplier-more-stock-tasks .supplier-stock-attention-list { margin-top: 8px; }
+.supplier-product-card { scroll-margin-top: 22px; }
 .supplier-marketplace-page { min-height: 75vh; padding: 34px 0 80px; background: #f6f8f7; }
 .marketplace-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 24px; }
 .marketplace-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
