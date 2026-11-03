@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Bell, Boxes, Building2, ChartNoAxesCombined, CircleAlert, CircleHelp, PackageCheck, PackagePlus, PackageSearch, Store } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bell, Bot, Boxes, Building2, ChartNoAxesCombined, CircleAlert, CircleHelp, PackageCheck, PackagePlus, PackageSearch, Store } from "lucide-react";
 import { markNotificationReadAction } from "@/app/actions";
 import { requireSupplier } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -19,6 +19,7 @@ const workspaceLinks = [
   { href: "/supplier/requests", label: "Buyer requests", description: "Review matched requests and send quotations.", icon: PackageSearch, action: "View requests" },
   { href: "/supplier/orders", label: "Orders", description: "Track accepted offers and update fulfilment.", icon: PackageCheck, action: "Manage orders" },
   { href: "/supplier/reports", label: "Reports", description: "See activity and performance from your account.", icon: ChartNoAxesCombined, action: "Open reports" },
+  { href: "/supplier/sales-assistant", label: "Sales assistant", description: "Set up after-hours product answers and manage paid access.", icon: Bot, action: "Set up assistant" },
 ];
 
 export default async function SupplierDashboardPage({ searchParams }: { searchParams: Promise<{ applied?: string; application?: string; error?: string; product?: string; quote?: string; order?: string; image?: string; logo?: string }> }) {

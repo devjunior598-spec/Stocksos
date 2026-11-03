@@ -8,8 +8,13 @@ import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
 import { ProductPromotionTools } from "@/components/product-promotion-tools";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getAccountStatus, getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
+import { SalesAssistantChat } from "@/components/sales-assistant-chat";
+import { createBusinessEnquiryAction } from "@/app/actions";
+import { hasPaidAssistantAccess } from "@/lib/sales-assistant";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ enquiry?: string; error?: string }> };
 
 async function getPublicProduct(id: string) {
   const supabase = await createSupabaseServerClient();
@@ -45,8 +50,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function PublicProductPage({ params }: Props) {
+export default async function PublicProductPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const query = await searchParams;
   const product = await getPublicProduct(id);
   if (!product) {
     const supabase = await createSupabaseServerClient();
@@ -54,6 +60,14 @@ export default async function PublicProductPage({ params }: Props) {
   }
   const business = unwrap(product.businesses);
   const stock = unwrap(product.inventory);
+  const [user, assistantSettings, assistantEntitlement] = await Promise.all([
+    getAuthenticatedUser(),
+    process.env.OPENAI_API_KEY ? createSupabaseAdminClient()?.from("sales_assistant_settings").select("enabled,greeting").eq("business_id", business.id).maybeSingle() : null,
+    process.env.OPENAI_API_KEY ? createSupabaseAdminClient()?.from("sales_assistant_entitlements").select("status,paid_through").eq("business_id", business.id).maybeSingle() : null,
+  ]);
+  const accountStatus = user ? await getAccountStatus(user.id) : null;
+  const buyerCanChat = user && await getMarketplaceRole(user.id) === "buyer" && (!accountStatus || accountStatus === "approved");
+  const assistant = assistantSettings?.data?.enabled && hasPaidAssistantAccess(assistantEntitlement?.data ?? null) ? assistantSettings.data : null;
   const imageUrl = getMarketplaceImageUrl(product.image_path);
   const storedMediaPaths = (product as typeof product & { media_paths?: string[] }).media_paths ?? [];
   const mediaPaths = Array.from(new Set([...storedMediaPaths, product.image_path].filter((path): path is string => Boolean(path))));
@@ -74,7 +88,7 @@ export default async function PublicProductPage({ params }: Props) {
     <section className="page-hero"><div className="page-container"><span className="eyebrow"><BadgeCheck size={14} /> Verified supplier listing</span><p className="small muted"><Link href={`/business/${business.slug}`}>{business.name}</Link> · {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")}</p><h1>{product.name}</h1><p className="lead">Available from an approved StockSOS supplier.</p></div></section>
     <section className="section-tight"><div className="page-container product-public-grid">
       <article className="panel product-public-card"><ProductMediaGallery paths={mediaPaths} title={product.name} /><div className="product-public-copy"><div className="product-public-tags"><span className="pill pill-green"><ShieldCheck size={12} /> Public stock</span><span className="pill">{product.condition}</span></div><h2>{product.name}</h2>{product.brand ? <p className="muted">Brand: {product.brand}</p> : null}{product.specifications ? <p className="product-description">{product.specifications}</p> : null}<div className="product-public-price">{formatMoney(stock.unit_price_kobo, stock.currency)} <span>per unit</span></div><p className="stock-available">{stock.quantity_available} available · {business.city}, {business.country}</p></div></article>
-      <aside className="product-public-aside"><section className="panel"><span className="eyebrow"><Building2 size={14} /> Supplier</span><h3>{business.name}</h3><p className="saved-location"><MapPin size={14} /> {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")}</p>{business.description ? <p className="muted small">{business.description}</p> : null}<Link className="text-link" href={`/business/${business.slug}`}>View supplier storefront <ArrowRight size={14} /></Link></section><section className="panel"><span className="eyebrow">Source this stock</span><h3>Need this product?</h3><p className="muted small">Send an SOS request and let approved suppliers respond with availability and quotations.</p><Link className="button button-primary form-submit" href="/sos"><Zap size={15} /> Send an SOS request</Link><Link className="button button-secondary form-submit" href={`/business/${business.slug}`}>Ask this supplier <ArrowRight size={15} /></Link><details className="product-share-tools"><summary>Share this listing</summary><ProductPromotionTools publicOrigin={PUBLIC_SITE_ORIGIN} product={{ id: product.id, name: product.name, businessName: business.name, price: formatMoney(stock.unit_price_kobo, stock.currency) }} /></details></section></aside>
+      <aside className="product-public-aside"><section className="panel"><span className="eyebrow"><Building2 size={14} /> Supplier</span><h3>{business.name}</h3><p className="saved-location"><MapPin size={14} /> {[business.area, business.city, business.region, business.country].filter(Boolean).join(", ")}</p>{business.description ? <p className="muted small">{business.description}</p> : null}<Link className="text-link" href={`/business/${business.slug}`}>View supplier storefront <ArrowRight size={14} /></Link></section>{assistant ? <SalesAssistantChat productId={product.id} greeting={assistant.greeting} canChat={Boolean(buyerCanChat)} signedIn={Boolean(user)} /> : null}<section className="panel"><span className="eyebrow">Source this stock</span><h3>Need this product?</h3><p className="muted small">Request a quotation for this listing. Review the final price and delivery terms before an order is created. Online payment is currently paused.</p>{query.enquiry === "sent" ? <div className="notice success-notice" role="status"><strong>Enquiry sent to the supplier.</strong></div> : null}{query.error ? <div className="notice error-notice" role="alert"><strong>Your enquiry could not be sent. Check the quantity and try again.</strong></div> : null}<Link className="button button-primary form-submit" href={`/sos?product=${product.id}`}><Zap size={15} /> Request this product</Link>{assistant && buyerCanChat ? <form action={createBusinessEnquiryAction} className="sales-chat-enquiry"><input type="hidden" name="business_id" value={business.id} /><input type="hidden" name="product_name" value={product.name} /><div className="form-field"><label htmlFor="sales-enquiry-quantity">Ask {business.name} to follow up</label><input id="sales-enquiry-quantity" type="number" name="quantity" min="1" max="1000000" defaultValue="1" required /></div><button className="button button-secondary form-submit" type="submit">Send supplier enquiry <ArrowRight size={14} /></button></form> : <Link className="button button-secondary form-submit" href={`/business/${business.slug}`}>Ask this supplier <ArrowRight size={15} /></Link>}<details className="product-share-tools"><summary>Share this listing</summary><ProductPromotionTools publicOrigin={PUBLIC_SITE_ORIGIN} product={{ id: product.id, name: product.name, businessName: business.name, price: formatMoney(stock.unit_price_kobo, stock.currency) }} /></details></section></aside>
     </div></section>
   </>;
 }
