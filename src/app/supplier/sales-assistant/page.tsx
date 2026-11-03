@@ -32,13 +32,14 @@ export default async function SupplierSalesAssistantPage({ searchParams }: {
   const modelReady = Boolean(process.env.OPENAI_API_KEY);
   const canActivate = paid && modelReady;
   const unavailable = Boolean(memberError || settingsResult.error || entitlementResult.error);
+  const schemaMissing = [settingsResult.error?.code, entitlementResult.error?.code].some((code) => code === "42P01" || code === "PGRST205");
 
   return <section className="dashboard-shell"><div className="page-container sales-assistant-page">
     <Link className="text-link marketplace-back" href="/supplier"><ArrowLeft size={15} /> Supplier workspace</Link>
     <div className="dashboard-top"><div><span className="eyebrow"><Bot size={15} /> Sales assistant</span><h1>Be ready when buyers ask.</h1><p className="muted">Prepare an on-site assistant that answers from your live listings and sends interested buyers into the existing enquiry workflow.</p></div><span className="pill"><LockKeyhole size={13} /> Paid feature</span></div>
     {params.saved ? <div className="notice success-notice" role="status"><strong>Assistant settings saved.</strong></div> : null}
     {params.error ? <div className="notice error-notice" role="alert"><strong>{params.error === "subscription" ? "An active paid entitlement is required before activation." : params.error === "model" ? "AI replies are not configured on this deployment yet." : params.error === "access" ? "Only an approved business owner or administrator can manage this assistant." : params.error === "invalid" ? "Please check the length of your answers and try again." : "Settings could not be saved. Please try again."}</strong></div> : null}
-    {unavailable ? <div className="notice error-notice" role="alert"><strong>Assistant settings could not be loaded. Refresh before making changes.</strong></div> : null}
+    {unavailable ? <div className="notice error-notice" role="alert"><strong>{schemaMissing ? "Assistant database setup is pending in this environment. You can review the controls here; saving will open after the migration is applied." : memberError ? "Your businesses could not be loaded. Refresh and try again." : "Assistant settings could not be loaded. Refresh before making changes."}</strong></div> : null}
     <div className="sales-assistant-layout"><div>
       <section className="panel dashboard-section"><div className="dashboard-section-head"><div><h2>Your assistant setup</h2><p className="muted small">One assistant per approved business. It never changes product prices or stock.</p></div><MessageCircle size={19} /></div>
         {manageable.length > 1 ? <div className="sales-assistant-businesses" aria-label="Choose a business">{manageable.map((business) => <Link className={business.id === selected?.id ? "pill pill-green" : "pill"} href={`/supplier/sales-assistant?business=${business.id}`} key={business.id}>{business.name}</Link>)}</div> : null}
