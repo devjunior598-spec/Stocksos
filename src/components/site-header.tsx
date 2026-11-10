@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, Menu } from "lucide-react";
-import { signOutAction } from "@/app/actions";
+import { ArrowUpRight } from "lucide-react";
 import { getAuthenticatedUser, getMarketplaceRole, getPlatformRole } from "@/lib/auth";
 import { AccountMenu } from "@/components/account-menu";
 import { InstallAppButton } from "@/components/install-app-button";
+import { MobileMenu } from "@/components/mobile-menu";
 
 const links = [
   { href: "/find-stock", label: "Find stock" },
@@ -24,7 +24,7 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="header-inner">
         <Link href="/" className="brand" aria-label="StockSOS home">
-          <span className="brand-logo-mark"><Image src="/stocksos-logo.png" width={42} height={42} alt="" priority unoptimized /></span>
+          <span className="brand-logo-mark"><Image src="/stocksos-mark.svg" width={42} height={42} alt="" priority unoptimized /></span>
           <span>Stock<span className="brand-accent">SOS</span></span>
         </Link>
         <nav className="primary-nav" aria-label="Main navigation">
@@ -39,17 +39,7 @@ export async function SiteHeader() {
             {marketplaceRole === "supplier" ? "Open workspace" : "Send an SOS"} <ArrowUpRight size={15} />
           </Link>}
         </div>
-        <details className="mobile-nav">
-          <summary aria-label="Open navigation"><Menu size={22} /></summary>
-          <nav aria-label="Mobile navigation">
-            {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
-            <InstallAppButton />
-            {user
-              ? <>{isAdmin ? <Link href="/admin">Admin console</Link> : <><Link href={accountLink.href}>{accountLink.label}</Link><Link href="/onboarding">Account settings</Link></>}<form action={signOutAction}><button className="mobile-nav-action" type="submit">Log out</button></form></>
-              : <Link href="/login">Log in</Link>}
-            {!isAdmin && <Link className="button button-primary" href={marketplaceRole === "supplier" ? "/supplier" : "/sos"}>{marketplaceRole === "supplier" ? "Open workspace" : "Send an SOS"} <ArrowUpRight size={15} /></Link>}
-          </nav>
-        </details>
+        <MobileMenu links={links} signedIn={Boolean(user)} isAdmin={isAdmin} workspaceHref={accountLink.href} workspaceLabel={accountLink.label} isSupplier={marketplaceRole === "supplier"} />
       </div>
     </header>
   );

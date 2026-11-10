@@ -29,9 +29,12 @@ export function AccountMenu({ workspaceHref, workspaceLabel, isAdmin }: AccountM
 
     document.addEventListener("pointerdown", closeOnOutsidePointer);
     document.addEventListener("keydown", closeOnEscape);
+    const closeOnScroll = () => { if (menuRef.current) menuRef.current.open = false; };
+    window.addEventListener("scroll", closeOnScroll, { passive: true });
     return () => {
       document.removeEventListener("pointerdown", closeOnOutsidePointer);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnScroll);
     };
   }, []);
 

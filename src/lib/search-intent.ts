@@ -39,7 +39,10 @@ export function parseSearchIntent(input: string, categories: Category[], savedCi
   const location = product.match(/\b(?:in|near|around)\s+([\p{L}][\p{L}\s.'-]*?)\s*[.!?]*$/u);
   const city = location ? location[1].trim().replace(/[.!?]+$/, "") : savedCity.trim();
   if (location) product = product.replace(location[0], "");
-  product = product.replace(/^(?:please\s+)?(?:find(?: me)?|show me|i need|we need|i am looking for|i'm looking for|looking for|search for)\s+/i, "").replace(/[.!?,]+$/g, "").replace(/\s+/g, " ").trim();
+  product = product.replace(/^(?:please\s+)?(?:find(?: me)?|show me|i need|we need|i am looking for|i'm looking for|i am searching for|i'm searching for|looking for|search for)\s+/i, "").replace(/[.!?,]+$/g, "").replace(/\s+/g, " ").trim();
+  // Quantity belongs to an eventual SOS request, but should not hide the product in catalog search.
+  // Keep dimensions such as "12 mm plywood" intact.
+  product = product.replace(/^\d+(?:[,.]\d+)?\s+(?:cases?|boxes?|packs?|units?|pieces?|bags?|cartons?|pallets?)\s+(?:of\s+)?/i, "");
   const lower = product.toLowerCase();
   const category = categories.find((entry) => lower === entry.name.toLowerCase() || (keywords[entry.slug] ?? []).some((word) => new RegExp(`\\b${word}\\b`, "i").test(lower)));
   return { q: product.slice(0, 80), city: city.slice(0, 60), category: category?.id ?? "", min, max, locationSource: location ? "spoken" : city ? "profile" : "unspecified" };

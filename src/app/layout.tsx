@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },
+  alternates: { types: { "application/rss+xml": `${PUBLIC_SITE_ORIGIN}/feeds/products` } },
   robots: { index: true, follow: true },
 };
 

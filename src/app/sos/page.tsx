@@ -44,7 +44,7 @@ export default async function SOSPage({ searchParams }: Props) {
       <section className="page-hero"><div className="page-container"><span className="eyebrow"><Zap size={14} /> SOS Now</span><h1>Tell StockSOS. We’ll find it.</h1><p className="lead">A shorter, conversational way to source stock from approved suppliers.</p><p className="metric-note"><CircleAlert size={14} /> You review and confirm before anything is sent.</p></div></section>
       <section className="page-container">
         {!configured ? <div className="form-panel"><SupabaseSetupNotice /></div> : !user ? <div className="form-panel empty-state"><div className="empty-state-icon"><Zap size={22} /></div><h3>Sign in to send a request</h3><p>Your request stays connected to your account so you can compare offers and track any resulting order.</p><Link className="button button-primary" href={`/login?next=${encodeURIComponent(productId ? `/sos?product=${productId}` : "/sos")}`}>Log in to continue <ArrowRight size={15} /></Link></div> : (
-          <SOSAIRequest categories={categories} location={location} action={createSOSAction} error={params.error}
+          <SOSAIRequest categories={categories} location={location} action={createSOSAction} error={params.error} voiceFallbackAvailable={Boolean(process.env.OPENAI_API_KEY)}
             initialProduct={requestedProduct?.data ? { id: requestedProduct.data.id, name: requestedProduct.data.name, categoryId: requestedProduct.data.category_id } : undefined} />
         )}
       </section>

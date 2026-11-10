@@ -2,9 +2,9 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2,
-  Globe2, Megaphone, PackageSearch, ShieldCheck, Truck, Zap,
+  Globe2, Megaphone, PackageSearch, ShieldCheck, Sparkles, Truck, Zap,
 } from "lucide-react";
-import { dedupePublicListings, formatMoney, getMarketplaceImageUrl, getProductsResult } from "@/lib/data";
+import { dedupePublicListings, formatMoney, getMarketplaceImageUrl, getProductsResult, type PublicProduct } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +40,28 @@ function PromotionChannelGroup({ duplicate = false }: { duplicate?: boolean }) {
   );
 }
 
+function ProductShowcaseCard({ product, featured = false }: { product: PublicProduct; featured?: boolean }) {
+  const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
+  const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;
+  const imageUrl = getMarketplaceImageUrl(product.image_path);
+  return <article className={`product-card home-product-card${featured ? " home-product-featured" : ""}`}>
+    <Link className={`product-placeholder${imageUrl ? "" : " product-photo-missing"}`} href={`/product/${product.id}`} aria-label={`View ${product.name}`}>
+      {imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes={featured ? "(max-width: 700px) 100vw, 560px" : "(max-width: 700px) 100vw, (max-width: 1050px) 50vw, 33vw"} className="product-image" /> : <><PackageSearch size={32} /><span>Supplier photo unavailable</span></>}
+    </Link>
+    <div className="product-detail">
+      <div className="product-card-badges"><span className="pill pill-green"><BadgeCheck size={11} /> Approved supplier</span><span className="pill">{product.condition}</span></div>
+      <h3><Link href={`/product/${product.id}`}>{product.name}</Link></h3>
+      <p className="home-product-supplier">{business?.name ?? "Approved supplier"}</p>
+      <p>{[product.brand, business?.city, business?.country].filter(Boolean).join(" · ") || "Supplier location not listed"}</p>
+      <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}<small> per unit</small></div>
+      <div className="home-product-meta"><span>{stock ? `${stock.quantity_available} available` : "Check availability"}</span><Link className="text-link" href={`/product/${product.id}`}>View listing <ArrowRight size={13} /></Link></div>
+    </div>
+  </article>;
+}
+
 export default async function HomePage() {
-  const { products: latestProducts, error: productFeedError } = await getProductsResult(undefined, undefined, 8);
-  const publicListings = dedupePublicListings(latestProducts);
+  const { products: latestProducts, error: productFeedError } = await getProductsResult(undefined, undefined, 12);
+  const publicListings = dedupePublicListings(latestProducts).slice(0, 7);
 
   return (
     <div className="home-page">
@@ -101,32 +120,15 @@ export default async function HomePage() {
 
       <section className="section home-product-showcase" aria-labelledby="latest-products-title">
         <div className="page-container">
-          <div className="home-product-heading">
+          <div className="home-market-intro">
             <div className="section-heading">
-              <span className="eyebrow"><PackageSearch size={14} /> Live supplier inventory</span>
-              <h2 id="latest-products-title">Discover products available now.</h2>
-              <p className="lead">New public listings appear here automatically after the supplier is approved and the product has available stock.</p>
+              <span className="eyebrow"><span className="status-dot" /> Live marketplace</span>
+              <h2 id="latest-products-title">Good stock should be easy to find.</h2>
+              <p className="lead">Explore products listed by approved suppliers. See the price, location and available quantity before you make contact.</p>
             </div>
-            <Link className="button button-secondary" href="/find-stock">Browse all products <ArrowRight size={16} /></Link>
+            <div className="home-market-actions"><Link className="button button-primary" href="/find-stock">Explore all stock <ArrowRight size={16} /></Link><Link className="text-link" href="/sos">Need something else? Send an SOS <ArrowUpRight size={14} /></Link></div>
           </div>
-          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : publicListings.length ? <div className="catalog-grid home-product-grid">{publicListings.map((product) => {
-            const stock = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
-            const business = Array.isArray(product.businesses) ? product.businesses[0] : product.businesses;
-            const imageUrl = getMarketplaceImageUrl(product.image_path);
-            return <article className="product-card home-product-card" key={product.id}>
-              <Link className={`product-placeholder${imageUrl ? "" : " product-photo-missing"}`} href={`/product/${product.id}`} aria-label={`View ${product.name}`}>
-                {imageUrl ? <Image src={imageUrl} alt={product.name} fill unoptimized sizes="(max-width: 700px) 50vw, (max-width: 1050px) 33vw, 25vw" className="product-image" /> : <><PackageSearch size={28} /><span>Supplier photo unavailable</span></>}
-              </Link>
-              <div className="product-detail">
-                <div className="product-card-badges"><span className="pill pill-green"><BadgeCheck size={11} /> Approved</span><span className="pill">{product.condition}</span></div>
-                <h3><Link href={`/product/${product.id}`}>{product.name}</Link></h3>
-                <p>{business?.name ?? "Approved supplier"}</p>
-                <p>{[product.brand, business?.city, business?.country].filter(Boolean).join(" · ") || "Supplier location not listed"}</p>
-                <div className="product-price">{stock ? formatMoney(stock.unit_price_kobo, stock.currency) : "Price on request"}<small> per unit</small></div>
-                <div className="home-product-meta"><span>{stock ? `${stock.quantity_available} available` : "Check availability"}</span><Link className="text-link" href={`/product/${product.id}`}>View <ArrowRight size={13} /></Link></div>
-              </div>
-            </article>;
-          })}</div> : <div className="empty-state home-product-empty"><div className="empty-state-icon"><PackageSearch size={22} /></div><h3>Supplier products will appear here</h3><p>StockSOS displays available inventory from approved suppliers. Suppliers can publish their listings to make them discoverable.</p><div className="hero-buttons"><Link className="button button-primary" href="/become-supplier">List products as a supplier <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/sos">Request a product</Link></div></div>}
+          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : publicListings.length ? <div className="home-market-content"><ProductShowcaseCard product={publicListings[0]} featured /><div className="catalog-grid home-product-grid">{publicListings.slice(1).map((product) => <ProductShowcaseCard product={product} key={product.id} />)}</div></div> : <div className="empty-state home-product-empty"><div className="empty-state-icon"><Sparkles size={22} /></div><h3>The marketplace is getting ready.</h3><p>When approved suppliers publish available products, you’ll see them here. You can already tell StockSOS what you need and invite suppliers to quote.</p><div className="hero-buttons"><Link className="button button-primary" href="/sos">Request stock <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/become-supplier">List your products</Link></div></div>}
         </div>
       </section>
 

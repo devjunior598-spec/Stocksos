@@ -8,6 +8,9 @@ type Recognition = {
   interimResults: boolean;
   continuous: boolean;
   onstart: () => void;
+  onaudiostart: () => void;
+  onspeechstart: () => void;
+  onnomatch: () => void;
   onresult: (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void;
   onerror: (event: { error?: string }) => void;
   onend: () => void;
@@ -40,7 +43,7 @@ function recognitionErrorMessage(code: string | undefined) {
   }
 }
 
-export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLength, required = false, fallbackAvailable = false, onValueChange }: {
+export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLength, required = false, fallbackAvailable = false, onValueChange, onTranscript }: {
   id: string;
   name: string;
   defaultValue?: string;
@@ -49,19 +52,24 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
   required?: boolean;
   fallbackAvailable?: boolean;
   onValueChange?: (value: string) => void;
+  onTranscript?: (value: string) => void;
 }) {
   const [value, setValue] = useState(defaultValue);
   const [listening, setListening] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [speechDetected, setSpeechDetected] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [error, setError] = useState("");
   const [reply, setReply] = useState("");
   const [liveProducts, setLiveProducts] = useState<LiveProduct[]>([]);
+  const [searchUrl, setSearchUrl] = useState("");
   const [audioConsent, setAudioConsent] = useState(false);
   const recognition = useRef<Recognition | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const audioStream = useRef<MediaStream | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopping = useRef(false);
   const mounted = useRef(true);
 
@@ -74,12 +82,14 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
       recorder.current?.stop();
       audioStream.current?.getTracks().forEach((track) => track.stop());
       if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+      if (speechTimer.current) clearTimeout(speechTimer.current);
     };
   }, []);
 
   async function askStockSOS(transcript: string) {
     setReply("");
     setLiveProducts([]);
+    setSearchUrl("");
     try {
       const response = await fetch("/api/voice/search", {
         method: "POST",
@@ -87,10 +97,7 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
         body: JSON.stringify({ query: transcript }),
       });
       const result = await response.json() as { message?: string; error?: string; products?: LiveProduct[]; searchUrl?: string };
-      if (response.ok && name === "q" && result.searchUrl?.startsWith("/find-stock?")) {
-        window.location.assign(result.searchUrl);
-        return;
-      }
+      if (response.ok && result.searchUrl?.startsWith("/find-stock?")) setSearchUrl(result.searchUrl);
       setReply(response.ok ? result.message ?? "StockSOS received your request." : result.error ?? "Stock search could not be completed.");
       if (response.ok) setLiveProducts(result.products ?? []);
     } catch {
@@ -103,7 +110,8 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
     if (!clean) return;
     setValue(clean);
     onValueChange?.(clean);
-    void askStockSOS(clean);
+    onTranscript?.(clean);
+    if (name === "q") void askStockSOS(clean);
   }
 
   async function startTranscriptionFallback() {
@@ -169,9 +177,9 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
   }
 
   async function toggleVoice() {
-    if (listening) {
+    if (listening || starting) {
       if (recorder.current?.state === "recording") recorder.current.stop();
-      else { stopping.current = true; recognition.current?.stop(); }
+      else { stopping.current = true; recognition.current?.stop(); setStarting(false); setListening(false); }
       return;
     }
     setError("");
@@ -187,22 +195,48 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
       return;
     }
     const next = new RecognitionConstructor();
+    let receivedResult = false;
+    let receivedError = false;
+    let audioStarted = false;
+    let fallbackStarted = false;
     next.lang = navigator.language || "en-US";
     next.interimResults = false;
     next.continuous = false;
     next.onstart = () => {
       stopping.current = false;
-      setListening(true);
+      setStarting(true);
       setError("");
+      speechTimer.current = setTimeout(() => {
+        if (!audioStarted && recognition.current === next) {
+          receivedError = true;
+          setStarting(false);
+          setError("The browser opened its speech service but did not connect to your microphone. Check site microphone permission and try again. If your browser offers secure backup transcription, you can enable it below.");
+          next.stop();
+        }
+      }, 15000);
+    };
+    next.onaudiostart = () => {
+      audioStarted = true;
+      if (speechTimer.current) clearTimeout(speechTimer.current);
+      setStarting(false);
+      setListening(true);
+    };
+    next.onspeechstart = () => setSpeechDetected(true);
+    next.onnomatch = () => {
+      receivedError = true;
+      setError("I heard audio but could not recognize the words. Please speak clearly or type your product request.");
     };
     next.onresult = (event) => {
       const transcript = Array.from(event.results).map((result) => result[0]?.transcript ?? "").join(" ").trim();
-      if (transcript) acceptTranscript(transcript);
+      if (transcript) { receivedResult = true; acceptTranscript(transcript); }
     };
     next.onerror = (event) => {
+      receivedError = true;
+      setStarting(false);
       setListening(false);
       if (stopping.current && event.error === "aborted") return;
-      if ((event.error === "network" || event.error === "service-not-allowed") && audioConsent) {
+      if (event.error === "network" && fallbackAvailable && audioConsent) {
+        fallbackStarted = true;
         setError("Device speech is unavailable. Starting secure backup transcription; speak your request now.");
         void startTranscriptionFallback();
       } else {
@@ -210,23 +244,34 @@ export function VoiceTextField({ id, name, defaultValue = "", placeholder, maxLe
       }
     };
     next.onend = () => {
-      setListening(false);
+      if (speechTimer.current) clearTimeout(speechTimer.current);
+      setStarting(false);
+      if (!fallbackStarted) setListening(false);
       recognition.current = null;
+      if (!receivedResult && !receivedError && !stopping.current) {
+        setError(audioStarted ? "No words were recognized. Tap Speak, allow a moment to talk, then try again." : "The speech service ended before microphone audio arrived. Check microphone permission and your device speech service, or use secure backup transcription if available.");
+      }
+      setSpeechDetected(false);
+      stopping.current = false;
     };
     recognition.current = next;
     try {
+      setStarting(true);
+      setSpeechDetected(false);
       next.start();
     } catch (cause) {
+      setStarting(false);
       setListening(false);
       const code = cause instanceof DOMException ? cause.name : undefined;
       setError(code === "InvalidStateError" ? "Voice input is already starting. Wait a moment and try again." : recognitionErrorMessage(code));
     }
   }
 
-  return <div className="voice-field"><div className="voice-field-row"><input id={id} name={name} value={value} onChange={(event) => { setValue(event.target.value); onValueChange?.(event.target.value); }} placeholder={placeholder} maxLength={maxLength} required={required} /><button className="button button-secondary button-small voice-button" type="button" onClick={toggleVoice} disabled={transcribing} aria-pressed={listening} aria-label={listening ? "Stop voice input" : "Start voice input"}>{transcribing ? <LoaderCircle size={15} className="spin" /> : listening ? <MicOff size={15} /> : <Mic size={15} />}{transcribing ? "Transcribing" : listening ? "Stop" : "Speak"}</button></div>
-    <span className={`form-hint voice-status${listening ? " voice-status-listening" : ""}`} role={error ? "alert" : "status"}>{error || (transcribing ? "Securely transcribing your short recording…" : listening ? "Listening… speak clearly, then tap Stop when finished." : "Tap Speak to start. Your words will appear here for review before you submit.")}</span>
+  return <div className="voice-field"><div className="voice-field-row"><input id={id} name={name} value={value} onChange={(event) => { setValue(event.target.value); setReply(""); setLiveProducts([]); setSearchUrl(""); onValueChange?.(event.target.value); }} placeholder={placeholder} maxLength={maxLength} enterKeyHint="search" required={required} /><button className="button button-secondary button-small voice-button" type="button" onClick={toggleVoice} disabled={transcribing} aria-pressed={listening || starting} aria-label={listening || starting ? "Stop voice input" : "Start voice input"}>{transcribing ? <LoaderCircle size={15} className="spin" /> : listening || starting ? <MicOff size={15} /> : <Mic size={15} />}{transcribing ? "Transcribing" : listening || starting ? "Stop" : "Speak"}</button></div>
+    <span className={`form-hint voice-status${listening ? " voice-status-listening" : ""}`} role={error ? "alert" : "status"}>{error || (transcribing ? "Securely transcribing your short recording…" : starting ? "Connecting to your microphone… allow access if your browser asks." : listening ? speechDetected ? "Speech detected… finish your request, then tap Stop." : "Microphone connected. Speak clearly, then tap Stop." : "Tap Speak to start. Your words will appear here for review before you search.")}</span>
     {fallbackAvailable ? <label className="voice-consent"><input type="checkbox" checked={audioConsent} onChange={(event) => setAudioConsent(event.target.checked)} /> If device speech fails, allow a short recording to be sent securely to our transcription provider. StockSOS does not store the recording.</label> : <span className="form-hint">Voice input depends on your browser. You can also type your request.</span>}
     {reply ? <div className="voice-reply" role="status"><Search size={15} /><span>{reply}</span>{typeof window !== "undefined" && "speechSynthesis" in window ? <button type="button" className="voice-read-reply" onClick={() => { const speech = new SpeechSynthesisUtterance(reply); speech.lang = "en-US"; window.speechSynthesis.cancel(); window.speechSynthesis.speak(speech); }}>Read reply</button> : null}</div> : null}
+    {searchUrl ? <a className="voice-search-link" href={searchUrl}>See all matching products and edit filters →</a> : null}
     {liveProducts.length ? <div className="voice-results" aria-label="Live supplier matches">{liveProducts.map((product) => <a href={product.supplierUrl} className="voice-result" key={`${product.supplier}-${product.name}`}><span><strong>{product.name}</strong>{product.brand ? <small>{product.brand}</small> : null}<small>{product.supplier} · {product.city} · {product.quantityAvailable} available</small></span><b>{product.price ?? "Price on request"}</b></a>)}</div> : null}
   </div>;
 }

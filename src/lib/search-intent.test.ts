@@ -18,4 +18,7 @@ describe("spoken search filters", () => {
   it("does not assign a category or city without evidence", () => {
     expect(parseSearchIntent("special widget", categories)).toMatchObject({ category: "", city: "" });
   });
+  it("extracts a product from a natural spoken order without searching the quantity phrase", () => {
+    expect(parseSearchIntent("I'm looking for 20 cases of bottled water in Houston", categories)).toMatchObject({ q: "bottled water", city: "Houston" });
+  });
 });
