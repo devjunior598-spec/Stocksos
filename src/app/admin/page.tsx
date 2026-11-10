@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, ArrowRight, BadgeCheck, Building2, CircleAlert, LifeBuoy, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
+import { Activity, ArrowRight, BadgeCheck, Building2, ChartNoAxesCombined, CircleAlert, LifeBuoy, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/data";
 
@@ -45,7 +45,7 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <div className="dashboard-section-head admin-snapshot-heading"><h2>Marketplace snapshot</h2><Link className="text-link" href="/admin/activity">Activity log <ArrowRight size={14} /></Link></div>
+      <div className="dashboard-section-head admin-snapshot-heading"><h2>Marketplace snapshot</h2><Link className="text-link" href="/admin/growth"><ChartNoAxesCombined size={14} /> Growth report <ArrowRight size={14} /></Link></div>
       <div className="dashboard-grid admin-summary-grid">
         <article className="stat-card"><span>Registered accounts</span><strong>{countValue(accounts)}</strong><Link href="/admin/accounts">Open accounts <ArrowRight size={13} /></Link></article>
         <article className="stat-card"><span>Approved suppliers</span><strong>{countValue(approvedBusinesses)}</strong><Link href="/admin/accounts#suppliers">Supplier directory <ArrowRight size={13} /></Link></article>

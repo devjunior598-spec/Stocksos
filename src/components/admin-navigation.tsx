@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Archive, Home, LifeBuoy, Package, Settings2, ShoppingBag, Users } from "lucide-react";
+import { Activity, Archive, ChartNoAxesCombined, Home, LifeBuoy, Package, Settings2, ShoppingBag, Users } from "lucide-react";
 
 const items = [
   { href: "/admin", label: "Overview", icon: Home },
+  { href: "/admin/growth", label: "Growth", icon: ChartNoAxesCombined },
   { href: "/admin/accounts", label: "Accounts", icon: Users },
   { href: "/admin/products", label: "Listings", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
