@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, ExternalLink, Share2 } from "lucide-react";
 
-type Product = { id: string; name: string; businessName: string; price: string };
+type Product = { id: string; name: string; businessName: string; price: string; imageUrl?: string | null };
 
 export function ProductPromotionTools({ product, publicOrigin }: { product: Product; publicOrigin: string }) {
   const [message, setMessage] = useState("");
@@ -35,12 +35,14 @@ export function ProductPromotionTools({ product, publicOrigin }: { product: Prod
     }
   }
 
-  function openShare(platform: "facebook" | "linkedin" | "x" | "whatsapp") {
+  function openShare(platform: "facebook" | "linkedin" | "pinterest" | "x" | "whatsapp") {
     const url = productUrl(platform);
     const destination = platform === "facebook"
       ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
       : platform === "linkedin"
         ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+        : platform === "pinterest"
+          ? `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&media=${encodeURIComponent(product.imageUrl ?? "")}&description=${encodeURIComponent(caption)}`
         : platform === "x"
           ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}&url=${encodeURIComponent(url)}`
           : `https://wa.me/?text=${encodeURIComponent(postText(platform))}`;
@@ -54,6 +56,7 @@ export function ProductPromotionTools({ product, publicOrigin }: { product: Prod
     <p className="promotion-link">{productUrl("supplier_link")}</p>
     <div className="promotion-actions">
       <button type="button" onClick={() => openShare("facebook")}>Facebook <ExternalLink size={13} /></button>
+      <button type="button" onClick={() => openShare("pinterest")}>Pinterest <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("linkedin")}>LinkedIn <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("x")}>X <ExternalLink size={13} /></button>
       <button type="button" onClick={() => openShare("whatsapp")}>WhatsApp <ExternalLink size={13} /></button>
