@@ -871,6 +871,27 @@ body:has(.admin-console) { padding-bottom: 0; }
 .supplier-help-card > .text-link, .supplier-secondary-link { display: flex; align-items: center; gap: 7px; color: var(--green); font-size: 11px; font-weight: 700; text-decoration: none; }
 .supplier-secondary-link { margin-top: 13px; padding-top: 13px; color: #63718a; border-top: 1px solid var(--line); }
 .supplier-stats { margin-top: 15px; }
+.supplier-today { margin: 18px 0; padding: 0; overflow: hidden; border-color: #cfdfd7; background: linear-gradient(135deg, #ffffff 0%, #f1f8f4 100%); }
+.supplier-today-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 18px 19px 15px; border-bottom: 1px solid #dce9e0; }
+.supplier-today-head .eyebrow { color: var(--green); }
+.supplier-today-head h2 { max-width: 590px; margin: 5px 0 0; color: var(--navy); font-size: 19px; letter-spacing: -.025em; }
+.supplier-today-head > .text-link { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; font-size: 11px; white-space: nowrap; }
+.supplier-today-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.supplier-today-task { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 11px; padding: 16px 17px; color: var(--navy); text-decoration: none; border-right: 1px solid #dce9e0; transition: background .16s ease; }
+.supplier-today-task:last-child { border-right: 0; }
+.supplier-today-task:hover { background: #ffffffa8; }
+.supplier-today-icon { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; color: var(--green); background: #e5f3e9; }
+.supplier-today-attention .supplier-today-icon { color: #a75b13; background: #fff1da; }
+.supplier-today-priority .supplier-today-icon { color: #075fce; background: #e9f2ff; }
+.supplier-today-active .supplier-today-icon { color: #6b4bc1; background: #f0ecff; }
+.supplier-today-copy { min-width: 0; display: grid; align-content: center; gap: 4px; }
+.supplier-today-copy strong { overflow: hidden; color: var(--navy); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.supplier-today-copy small { color: var(--muted); font-size: 11px; line-height: 1.45; }
+.supplier-today-action { grid-column: 2; display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-size: 11px; font-weight: 750; }
+.supplier-today-empty { display: flex; align-items: center; gap: 12px; padding: 17px 19px; }
+.supplier-today-empty > div { min-width: 0; flex: 1; }
+.supplier-today-empty strong { color: var(--navy); font-size: 12px; }
+.supplier-today-empty p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .supplier-stock-attention { margin-top: 18px; }
 .supplier-stock-attention .dashboard-section-head > svg { color: #c77c1b; }
 .supplier-stock-attention-list { display: grid; gap: 0; margin: 2px 0 12px; }
@@ -1008,6 +1029,10 @@ body:has(.admin-console) { padding-bottom: 0; }
 @media (max-width: 900px) {
   .buyer-task-grid, .supplier-task-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .supplier-home-columns { grid-template-columns: 1fr; }
+  .supplier-today-list { grid-template-columns: 1fr; }
+  .supplier-today-task { grid-template-columns: auto minmax(0, 1fr) auto; border-right: 0; border-bottom: 1px solid #dce9e0; }
+  .supplier-today-task:last-child { border-bottom: 0; }
+  .supplier-today-action { grid-column: 3; grid-row: 1; align-self: center; }
 }
 @media (max-width: 700px) {
   .buyer-task-section, .supplier-task-section { margin: 22px 0; }
@@ -1021,6 +1046,13 @@ body:has(.admin-console) { padding-bottom: 0; }
   .supplier-business-list { display: grid; }
   .supplier-business-chip { min-width: 0; }
   .supplier-add-business { min-height: 44px; justify-content: center; }
+  .supplier-today-head { align-items: flex-start; flex-direction: column; gap: 8px; padding: 16px; }
+  .supplier-today-head h2 { font-size: 17px; }
+  .supplier-today-list { display: block; }
+  .supplier-today-task { grid-template-columns: auto minmax(0, 1fr); padding: 14px 16px; }
+  .supplier-today-action { grid-column: 2; grid-row: auto; }
+  .supplier-today-empty { align-items: flex-start; flex-wrap: wrap; padding: 16px; }
+  .supplier-today-empty > .button { width: 100%; }
   .supplier-first-step { grid-template-columns: auto 1fr; gap: 13px; padding: 17px; }
   .supplier-first-step > .button { grid-column: 1 / -1; width: 100%; }
 }

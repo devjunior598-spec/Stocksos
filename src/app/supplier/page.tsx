@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Bell, Bot, Boxes, Building2, ChartNoAxesCombined, CircleAlert, CircleHelp, PackageCheck, PackagePlus, PackageSearch, Store } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bell, Bot, Boxes, Building2, ChartNoAxesCombined, CircleAlert, CircleHelp, ClipboardCheck, PackageCheck, PackagePlus, PackageSearch, Sparkles, Store, Truck } from "lucide-react";
 import { markNotificationReadAction } from "@/app/actions";
 import { requireSupplier } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -76,6 +76,44 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
   const openMatches = matchesResult.count ?? 0;
   const ordersInProgress = orders.filter((order) => ["paid", "preparing", "ready_for_pickup", "dispatched", "delivered"].includes(order.status)).length;
   const completedOrders = orders.filter((order) => order.status === "completed").length;
+  const todayTasks = [
+    ...(stockTasks.length ? [{
+      key: "stock",
+      tone: "attention",
+      icon: CircleAlert,
+      label: stockTasks.length === 1 ? "Update 1 product" : `Update ${stockTasks.length} products`,
+      description: stockTasks[0].issue,
+      href: `/supplier/marketplace?edit=${stockTasks[0].id}#product-${stockTasks[0].id}`,
+      action: "Review stock",
+    }] : []),
+    ...(openMatches ? [{
+      key: "requests",
+      tone: "priority",
+      icon: ClipboardCheck,
+      label: openMatches === 1 ? "Reply to 1 buyer request" : `Reply to ${openMatches} buyer requests`,
+      description: "A prompt quotation helps buyers choose your stock sooner.",
+      href: "/supplier/requests",
+      action: "Send a quote",
+    }] : []),
+    ...(ordersInProgress ? [{
+      key: "orders",
+      tone: "active",
+      icon: Truck,
+      label: ordersInProgress === 1 ? "Move 1 order forward" : `Move ${ordersInProgress} orders forward`,
+      description: "Keep buyers informed with the latest fulfilment status.",
+      href: "/supplier/orders",
+      action: "Manage orders",
+    }] : []),
+    ...(discoverableProducts === 0 ? [{
+      key: "listing",
+      tone: "ready",
+      icon: PackagePlus,
+      label: "Publish your first discoverable product",
+      description: "Public, in-stock listings can appear in buyer search and your storefront.",
+      href: "/supplier/marketplace/new",
+      action: "Add a product",
+    }] : []),
+  ].slice(0, 3);
 
   return (
     <section className="dashboard-shell supplier-home">
@@ -127,6 +165,20 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
                   <article className="stat-card"><span>Orders in progress</span><strong>{ordersInProgress}</strong><span className="small">Orders to prepare or deliver</span></article>
                   <article className="stat-card"><span>Completed orders</span><strong>{completedOrders}</strong><span className="small">From your recent order history</span></article>
                 </div>
+                <section className="supplier-today panel" aria-labelledby="supplier-today-title">
+                  <div className="supplier-today-head">
+                    <div><span className="eyebrow"><Sparkles size={14} /> Today&apos;s focus</span><h2 id="supplier-today-title">Start with the work that moves your business forward.</h2></div>
+                    <Link className="text-link" href="/supplier/reports">View reports <ArrowRight size={14} /></Link>
+                  </div>
+                  {todayTasks.length ? <div className="supplier-today-list">{todayTasks.map((task) => {
+                    const Icon = task.icon;
+                    return <Link className={`supplier-today-task supplier-today-${task.tone}`} href={task.href} key={task.key}>
+                      <span className="supplier-today-icon"><Icon size={18} /></span>
+                      <span className="supplier-today-copy"><strong>{task.label}</strong><small>{task.description}</small></span>
+                      <span className="supplier-today-action">{task.action}<ArrowRight size={14} /></span>
+                    </Link>;
+                  })}</div> : <div className="supplier-today-empty"><span className="supplier-today-icon"><BadgeCheck size={18} /></span><div><strong>Your workspace is up to date.</strong><p>Keep your catalog fresh or add another product to give buyers more ways to find you.</p></div><Link className="button button-secondary button-small" href="/supplier/marketplace/new"><PackagePlus size={14} /> Add a product</Link></div>}
+                </section>
                 {stockTasks.length ? <section className="panel dashboard-section supplier-stock-attention" aria-labelledby="supplier-stock-attention-title">
                   <div className="dashboard-section-head"><div><h2 id="supplier-stock-attention-title">Products needing attention</h2><p className="muted small">Update stock or listing details to help buyers find accurate products.</p></div><CircleAlert size={18} /></div>
                   <div className="supplier-stock-attention-list">{stockTasks.slice(0, 5).map((task) => <Link key={task.id} href={`/supplier/marketplace?edit=${task.id}#product-${task.id}`}><span><strong>{task.name}</strong><small>{task.issue}</small></span><span className="text-link">Update <ArrowRight size={13} /></span></Link>)}</div>
