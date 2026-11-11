@@ -19,7 +19,7 @@ export async function saveSignupProfileFromMetadata(supabase: SupabaseClient) {
 
   const phone = typeof user.user_metadata?.phone === "string" && /^\+[1-9]\d{7,14}$/.test(user.user_metadata.phone)
     ? user.user_metadata.phone : null;
-  const { error } = await supabase.from("profiles").update({
+  const { data: saved, error } = await supabase.from("profiles").update({
     phone,
     home_country: profile.country,
     home_region: profile.region,
@@ -29,6 +29,6 @@ export async function saveSignupProfileFromMetadata(supabase: SupabaseClient) {
     home_address: profile.address || null,
     default_delivery_method: profile.defaultDeliveryMethod,
     updated_at: new Date().toISOString(),
-  }).eq("id", user.id);
-  return !error;
+  }).eq("id", user.id).select("id").maybeSingle();
+  return !error && saved?.id === user.id;
 }
