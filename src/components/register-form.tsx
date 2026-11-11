@@ -19,6 +19,7 @@ const errorMessages: Record<Exclude<SignUpState["error"], "">, { title: string; 
   duplicate: { title: "This email is already registered.", detail: "Log in with this email or use a different address for another account." },
   disposable: { title: "Use a permanent email address.", detail: "Temporary email domains cannot be used for StockSOS accounts." },
   rate: { title: "Too many registration attempts.", detail: "Wait before trying again." },
+  security: { title: "Registration is temporarily unavailable.", detail: "We could not complete a security check. Please try again shortly; your entries remain on this page." },
   signup: { title: "Your account could not be created.", detail: "Check your connection and try again. Your entries remain on this page." },
   setup: { title: "Registration is unavailable.", detail: "The account service is not configured for this deployment." },
 };

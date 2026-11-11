@@ -11,13 +11,17 @@ type RateLimitOptions = {
 
 /**
  * Uses a Supabase-backed counter so limits work across Vercel instances and
- * regions. It is fail-open only when the server-only service key is missing,
- * which keeps local development usable; production must configure the key and
- * apply the rate-limit migration.
+ * regions. Local development remains usable without a service key. Hosted
+ * deployments deny limited operations when the check cannot run, so a missing
+ * key or database function cannot silently disable abuse protection.
  */
 export async function consumeRateLimit(options: RateLimitOptions) {
+  const hosted = process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
   const admin = createSupabaseAdminClient();
-  if (!admin) return { allowed: true, configured: false };
+  if (!admin) {
+    if (hosted) console.error("Rate-limit service unavailable", { scope: options.scope });
+    return { allowed: !hosted, configured: hosted, error: hosted };
+  }
   const { data, error } = await admin.rpc("consume_rate_limit", {
     p_scope: options.scope,
     p_identifier: options.identifier,
@@ -26,7 +30,7 @@ export async function consumeRateLimit(options: RateLimitOptions) {
   });
   if (error) {
     console.error("Rate-limit check failed", { scope: options.scope, code: error.code });
-    return { allowed: true, configured: true, error: true };
+    return { allowed: !hosted, configured: true, error: true };
   }
   return { allowed: data === true, configured: true };
 }

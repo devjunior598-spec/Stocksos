@@ -16,6 +16,9 @@ export async function POST(request: Request) {
     limit: 10,
     windowSeconds: 60 * 60,
   });
+  if (rateLimit.error) {
+    return NextResponse.json({ error: "Secure transcription is temporarily unavailable. Please try again later or type your request." }, { status: 503 });
+  }
   if (rateLimit.configured && !rateLimit.allowed) {
     return NextResponse.json({ error: "Transcription is temporarily limited. Please try again later or type your request." }, { status: 429, headers: { "Retry-After": "3600" } });
   }

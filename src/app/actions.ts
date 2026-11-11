@@ -184,7 +184,7 @@ export async function verifyPhoneChangeOtpAction(_previous: PhoneOtpActionState,
 }
 
 export type SignUpState = {
-  error: "" | "invalid" | "business" | "category" | "password" | "duplicate" | "disposable" | "rate" | "signup" | "setup";
+  error: "" | "invalid" | "business" | "category" | "password" | "duplicate" | "disposable" | "rate" | "security" | "signup" | "setup";
   next?: string;
 };
 
@@ -227,6 +227,7 @@ export async function signUpAction(_previous: SignUpState, formData: FormData): 
     limit: 8,
     windowSeconds: 60 * 60,
   });
+  if (signupLimit.error) return { error: "security" };
   if (signupLimit.configured && !signupLimit.allowed) return { error: "rate" };
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { error: "setup" };
@@ -1110,6 +1111,7 @@ export async function createSupportCaseAction(formData: FormData) {
     limit: 10,
     windowSeconds: 60 * 60,
   });
+  if (supportLimit.error) redirect("/contact?error=security");
   if (supportLimit.configured && !supportLimit.allowed) redirect("/contact?error=rate");
   const orderId = value(formData, "order_id");
   const parsed = z.object({

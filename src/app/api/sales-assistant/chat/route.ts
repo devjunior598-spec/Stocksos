@@ -34,8 +34,11 @@ export async function POST(request: Request) {
 
   const identifier = `${user.id}:${getRequestIdentifier(request.headers)}`;
   const limited = await consumeRateLimit({ scope: "sales-assistant-chat", identifier, limit: 15, windowSeconds: 3600 });
-  if (!limited.configured || "error" in limited || !limited.allowed) {
-    return NextResponse.json({ error: limited.allowed ? "The sales assistant is temporarily unavailable." : "You have reached the hourly chat limit. Please try again later." }, { status: limited.allowed ? 503 : 429 });
+  if (!limited.configured || limited.error) {
+    return NextResponse.json({ error: "The sales assistant is temporarily unavailable." }, { status: 503 });
+  }
+  if (!limited.allowed) {
+    return NextResponse.json({ error: "You have reached the hourly chat limit. Please try again later." }, { status: 429 });
   }
 
   const raw = await request.text().catch(() => "");

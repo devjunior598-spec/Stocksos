@@ -15,6 +15,9 @@ export async function POST(request: Request) {
     limit: 60,
     windowSeconds: 60,
   });
+  if (rateLimit.error) {
+    return NextResponse.json({ error: "Search is temporarily unavailable. Please try again shortly." }, { status: 503 });
+  }
   if (rateLimit.configured && !rateLimit.allowed) {
     return NextResponse.json({ error: "Search is temporarily limited. Please wait a moment and try again." }, { status: 429, headers: { "Retry-After": "60" } });
   }
