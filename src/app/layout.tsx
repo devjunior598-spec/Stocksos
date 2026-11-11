@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
 import "./globals.css";
+import "./visual-refresh.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";

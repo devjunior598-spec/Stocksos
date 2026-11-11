@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes, Building2,
+  ArrowRight, ArrowUpRight, BadgeCheck, BarChart3, Boxes,
   Globe2, Megaphone, PackageSearch, ShieldCheck, Sparkles, Truck, Zap,
 } from "lucide-react";
 import { dedupePublicListings, formatMoney, getMarketplaceImageUrl, getProductsResult, type PublicProduct } from "@/lib/data";
@@ -68,53 +68,32 @@ export default async function HomePage() {
       <section className="hero">
         <div className="page-container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow"><span className="status-dot" />Source stock. Promote products. Reach customers.</span>
-            <h1>Find stock.<br /><span className="highlight">Grow your reach.</span></h1>
-            <p className="lead">StockSOS brings business buyers and suppliers together. Find available stock, publish your products and share your listings with more customers.</p>
+            <span className="eyebrow"><span className="status-dot" /> The inventory network for business</span>
+            <h1>Make stock<br /><span className="highlight">move smarter.</span></h1>
+            <p className="lead">Find the products your business needs. Put your own inventory in front of buyers. Move from a stock problem to a clear next step in one place.</p>
             <form className="hero-stock-search" action="/find-stock">
-              <label htmlFor="hero-query">What are you looking for?</label>
-              <div><PackageSearch size={22} aria-hidden="true" /><input id="hero-query" name="q" placeholder="Search products, brands, materials…" maxLength={80} /><button type="submit" className="button button-primary">Find stock <ArrowRight size={17} /></button></div>
+              <label htmlFor="hero-query">Start with a product</label>
+              <div><PackageSearch size={21} aria-hidden="true" /><input id="hero-query" name="q" placeholder="Search products or brands" maxLength={80} /><button type="submit" className="button button-primary">Search stock <ArrowRight size={17} /></button></div>
             </form>
             <div className="hero-buttons">
-              <Link className="button button-primary" href="/sos">Send an SOS <ArrowUpRight size={16} /></Link>
-              <Link className="button button-secondary" href="/become-supplier"><Megaphone size={16} /> Promote your products</Link>
+              <Link className="button button-secondary" href="/sos">Request hard-to-find stock <ArrowUpRight size={16} /></Link>
+              <Link className="hero-inline-link" href="/become-supplier">I want to sell <ArrowRight size={16} /></Link>
             </div>
-            <div className="hero-trust">
-              <span className="trust-item"><PackageSearch size={15} /> Buyer product discovery</span>
-              <span className="trust-item"><Megaphone size={15} /> Product sharing tools</span>
-              <span className="trust-item"><ShieldCheck size={15} /> Approved supplier accounts</span>
-            </div>
+            <p className="hero-microcopy"><ShieldCheck size={15} /> Supplier listings are reviewed before they appear publicly.</p>
           </div>
           <div className="hero-visual">
-            <div className="hero-pathways">
-              <span className="eyebrow">A better way to move stock</span>
-              <h2>What would you like to do?</h2>
-              <Link className="hero-pathway" href="/find-stock">
-                <span className="hero-pathway-icon"><PackageSearch size={18} /></span>
-                <span><strong>Find available stock</strong><small>Browse live listings from approved suppliers.</small></span>
-                <ArrowRight size={16} />
-              </Link>
-              <Link className="hero-pathway" href="/sos">
-                <span className="hero-pathway-icon"><Truck size={18} /></span>
-                <span><strong>Request what you need</strong><small>Send a sourcing request to relevant suppliers.</small></span>
-                <ArrowRight size={16} />
-              </Link>
-              <Link className="hero-pathway" href="/become-supplier">
-                <span className="hero-pathway-icon"><Megaphone size={18} /></span>
-                <span><strong>Promote your products</strong><small>Publish your listings for business buyers.</small></span>
-                <ArrowRight size={16} />
-              </Link>
+            <div className="network-panel">
+              <div className="network-panel-top"><span>STOCKSOS / HOW IT MOVES</span><span className="network-panel-dots" aria-hidden="true"><i /><i /><i /></span></div>
+              <h2>From need to next move.</h2>
+              <p>One connected path for sourcing and selling.</p>
+              <div className="network-steps">
+                <Link href="/find-stock" className="network-step"><span className="network-step-number">01</span><span className="network-step-icon"><PackageSearch size={20} /></span><span><strong>Discover stock</strong><small>Search real public inventory</small></span><ArrowUpRight size={17} /></Link>
+                <Link href="/sos" className="network-step"><span className="network-step-number">02</span><span className="network-step-icon"><Zap size={20} /></span><span><strong>Request and compare</strong><small>Get supplier quotations when needed</small></span><ArrowUpRight size={17} /></Link>
+                <Link href="/become-supplier" className="network-step"><span className="network-step-number">03</span><span className="network-step-icon"><Megaphone size={20} /></span><span><strong>Put products to work</strong><small>Publish and share your listings</small></span><ArrowUpRight size={17} /></Link>
+              </div>
+              <div className="network-panel-bottom"><span><span className="status-dot" /> BUILT FOR BUSINESS BUYERS</span><span>AND SUPPLIERS <ArrowRight size={13} /></span></div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="proof-strip">
-        <div className="page-container proof-inner">
-          <span><Megaphone size={16} /> Product promotion tools</span>
-          <span><Globe2 size={16} /> Public supplier storefronts</span>
-          <span><PackageSearch size={16} /> Buyer product discovery</span>
-          <span><BadgeCheck size={16} /> Approved supplier accounts</span>
         </div>
       </section>
 
@@ -128,7 +107,7 @@ export default async function HomePage() {
             </div>
             <div className="home-market-actions"><Link className="button button-primary" href="/find-stock">Explore all stock <ArrowRight size={16} /></Link><Link className="text-link" href="/sos">Need something else? Send an SOS <ArrowUpRight size={14} /></Link></div>
           </div>
-          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : publicListings.length ? <div className="home-market-content"><ProductShowcaseCard product={publicListings[0]} featured /><div className="catalog-grid home-product-grid">{publicListings.slice(1).map((product) => <ProductShowcaseCard product={product} key={product.id} />)}</div></div> : <div className="empty-state home-product-empty"><div className="empty-state-icon"><Sparkles size={22} /></div><h3>The marketplace is getting ready.</h3><p>When approved suppliers publish available products, you’ll see them here. You can already tell StockSOS what you need and invite suppliers to quote.</p><div className="hero-buttons"><Link className="button button-primary" href="/sos">Request stock <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/become-supplier">List your products</Link></div></div>}
+          {productFeedError ? <div className="notice notice-error" role="alert"><PackageSearch size={18} /><div><strong>Live products are temporarily unavailable.</strong><p>{productFeedError}</p></div></div> : publicListings.length ? <div className="home-market-content"><ProductShowcaseCard product={publicListings[0]} featured /><div className="catalog-grid home-product-grid">{publicListings.slice(1).map((product) => <ProductShowcaseCard product={product} key={product.id} />)}</div></div> : <div className="home-market-empty"><div><span className="eyebrow"><Sparkles size={14} /> New marketplace</span><h3>The first listings are on their way.</h3><p>Approved suppliers will appear here as they publish products. In the meantime, describe what you need and let suppliers respond with an offer.</p><div className="hero-buttons"><Link className="button button-primary" href="/sos">Request stock <ArrowRight size={15} /></Link><Link className="button button-secondary" href="/become-supplier">List your products</Link></div></div><div className="home-market-empty-art" aria-hidden="true"><PackageSearch size={44} /><span>YOUR NEXT SOURCE STARTS HERE</span></div></div>}
         </div>
       </section>
 
@@ -183,21 +162,6 @@ export default async function HomePage() {
                 <p>{step.copy}</p>
               </article>;
             })}
-          </div>
-        </div>
-      </section>
-
-      <section className="section surface">
-        <div className="page-container">
-          <div className="section-heading">
-            <span className="eyebrow">One network, two ways to move</span>
-            <h2>Source what you need. Recover the sale you almost lost.</h2>
-            <p className="lead">A stockout should not have to become a lost customer. StockSOS gives merchants a path to find supply and share their own stock with other businesses.</p>
-          </div>
-          <div className="card-grid">
-            <article className="feature-card"><span className="feature-icon"><PackageSearch size={20} /></span><h3>For buyers</h3><p>Post a specific request, receive supplier quotations, compare the terms, then choose whether to proceed.</p><Link className="text-link" href="/sos">Create an SOS request <ArrowRight size={15} /></Link></article>
-            <article className="feature-card"><span className="feature-icon"><Building2 size={20} /></span><h3>For suppliers</h3><p>List available stock, respond to matching requests and manage quotations and orders from one workspace.</p><Link className="text-link" href="/become-supplier">Apply to supply <ArrowRight size={15} /></Link></article>
-            <article className="feature-card"><span className="feature-icon"><Zap size={20} /></span><h3>For local merchants</h3><p>Share a business profile through SOS Link and ask the network to help source items you do not carry.</p><Link className="text-link" href="/how-it-works">See how it works <ArrowRight size={15} /></Link></article>
           </div>
         </div>
       </section>
