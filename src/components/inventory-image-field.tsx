@@ -47,7 +47,9 @@ export function InventoryImageField({ id, currentPath = "", currentPaths = [], p
     const input = fileRef.current;
     const files = Array.from(input?.files ?? []);
     if (!files.length) return;
-    if (paths.length + files.length > 11) {
+    const photoCount = paths.filter((path) => /\.(jpg|png|webp)$/i.test(path)).length
+      + files.filter((file) => file.type.startsWith("image/")).length;
+    if (photoCount > 10 || paths.length + files.length > 11) {
       setError("Add up to 10 photos and one video per product.");
       if (input) input.value = "";
       return;
@@ -77,7 +79,7 @@ export function InventoryImageField({ id, currentPath = "", currentPaths = [], p
       const extension = acceptedTypes.get(file.type)!;
       const objectPath = `${businessId}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await supabase.storage.from("marketplace-images").upload(objectPath, file, { contentType: file.type, cacheControl: "3600", upsert: false });
-      if (uploadError) { setError(uploadError.message || "Some media could not be uploaded. Remove incomplete selections and retry."); break; }
+      if (uploadError) { setError("Some media could not be uploaded. Check your connection and add the missing files again."); break; }
       uploaded.push(objectPath);
     }
     setPaths((current) => [...current, ...uploaded]);

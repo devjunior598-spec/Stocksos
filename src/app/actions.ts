@@ -11,6 +11,7 @@ import { moneyToMinorUnits } from "@/lib/money";
 import { isMarketplaceImagePathForBusiness, isMarketplaceMediaPathForBusiness } from "@/lib/image-path";
 import { isDisposableEmail } from "@/lib/disposable-email";
 import { hasSpecificProductTitle } from "@/lib/product-quality";
+import { publicProductRequirements, validProductMedia } from "@/lib/supplier-product";
 import { consumeRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 import { preserveBusinessLogos, preserveProductMedia, removePublicArchivedMedia } from "@/lib/marketplace-evidence";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -538,7 +539,9 @@ export async function acceptQuotationAction(formData: FormData) {
   redirect("/orders/" + orderId);
 }
 
-export async function createSupplierProductAction(formData: FormData) {
+export type CreateProductState = { error: "" | "name" | "photo" | "price" | "stock" | "media" | "product"; redirectTo?: string };
+
+export async function createSupplierProductAction(_previous: CreateProductState, formData: FormData): Promise<CreateProductState> {
   await requireSupplier();
   const parsed = z.object({
     businessId: z.uuid(),
@@ -576,15 +579,20 @@ export async function createSupplierProductAction(formData: FormData) {
   const unitPriceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
   const isMarketplaceCreate = value(formData, "return_to") === "/supplier/marketplace/new";
   const returnTo = isMarketplaceCreate ? "/supplier/marketplace" : "/supplier";
-  const errorReturnTo = isMarketplaceCreate ? "/supplier/marketplace/new" : "/supplier";
-  if (!hasSpecificProductTitle(value(formData, "name"))) redirect(errorReturnTo + "?error=name");
+  if (!hasSpecificProductTitle(value(formData, "name"))) return { error: "name" };
   if (!parsed.success || unitPriceKobo === null
+    || !validProductMedia(parsed.data.mediaPaths, parsed.data.imagePath || "")
     || parsed.data.mediaPaths.some((path) => !isMarketplaceMediaPathForBusiness(path, parsed.data.businessId))
     || (parsed.data.imagePath && (!isMarketplaceImagePathForBusiness(parsed.data.imagePath, parsed.data.businessId) || !parsed.data.mediaPaths.includes(parsed.data.imagePath)))) {
-    redirect(errorReturnTo + "?error=product");
+    return { error: "product" };
   }
-  if (parsed.data.visibility === "public" && !parsed.data.imagePath) redirect(errorReturnTo + "?error=photo");
+  const requirement = publicProductRequirements({ visibility: parsed.data.visibility, priceMinor: unitPriceKobo,
+    quantity: parsed.data.quantity, coverPath: parsed.data.imagePath || "" });
+  if (requirement) return { error: requirement };
   const supabase = await createSupabaseServerClient();
+  const mediaChecks = await Promise.all(parsed.data.mediaPaths.map((path) =>
+    supabase!.storage.from("marketplace-images").exists(path)));
+  if (mediaChecks.some(({ data, error }) => !data || error)) return { error: "media" };
   const productDetails = [
     parsed.data.sku ? `SKU: ${parsed.data.sku}` : "",
     parsed.data.unit ? `Sold by: ${parsed.data.unit}` : "",
@@ -601,17 +609,20 @@ export async function createSupplierProductAction(formData: FormData) {
     p_condition: parsed.data.condition,
     p_quantity: parsed.data.quantity,
     p_unit_price_kobo: unitPriceKobo,
-    p_visibility: parsed.data.visibility,
+    // Keep the new row private until its media and public visibility are saved together.
+    p_visibility: "private",
   });
-  if (error || !productId) redirect(errorReturnTo + "?error=product");
-  if (parsed.data.mediaPaths.length || parsed.data.imagePath) {
+  if (error || !productId) return { error: "product" };
+  if (parsed.data.mediaPaths.length || parsed.data.visibility === "public") {
     const { error: mediaError } = await supabase!.from("products")
-      .update({ image_path: parsed.data.imagePath || null, media_paths: parsed.data.mediaPaths }).eq("id", productId).eq("business_id", parsed.data.businessId);
-    if (mediaError) redirect(returnTo + "?product=created&image=error");
+      .update({ image_path: parsed.data.imagePath || null, media_paths: parsed.data.mediaPaths,
+        visibility: parsed.data.visibility }).eq("id", productId).eq("business_id", parsed.data.businessId).select("id").single();
+    if (mediaError) return { error: "", redirectTo: returnTo + "?product=draft&image=error" };
   }
   revalidatePath("/supplier");
   revalidatePath("/supplier/marketplace");
-  redirect(returnTo + "?product=created");
+  revalidatePath("/find-stock");
+  return { error: "", redirectTo: returnTo + (parsed.data.visibility === "public" ? "?product=published" : "?product=draft") };
 }
 
 export async function updateSupplierProductAction(formData: FormData) {
@@ -645,8 +656,10 @@ export async function updateSupplierProductAction(formData: FormData) {
   });
   if (!hasSpecificProductTitle(value(formData, "name"))) redirect("/supplier/marketplace?error=name" + editQuery);
   const priceKobo = parsed.success ? moneyToMinorUnits(parsed.data.price, true) : null;
-  if (!parsed.success || priceKobo === null) redirect("/supplier/marketplace?error=product");
-  if (parsed.data.visibility === "public" && !parsed.data.imagePath) redirect("/supplier/marketplace?error=photo" + editQuery);
+  if (!parsed.success || priceKobo === null || !validProductMedia(parsed.data.mediaPaths, parsed.data.imagePath || "")) redirect("/supplier/marketplace?error=product" + editQuery);
+  const requirement = publicProductRequirements({ visibility: parsed.data.visibility, active: parsed.data.isActive === "yes",
+    priceMinor: priceKobo, quantity: parsed.data.quantity, coverPath: parsed.data.imagePath || "" });
+  if (requirement) redirect("/supplier/marketplace?error=" + requirement + editQuery);
   const supabase = await createSupabaseServerClient();
   const { data: currentProduct } = await supabase!.from("products")
     .select("business_id,image_path,media_paths").eq("id", parsed.data.productId).maybeSingle();
@@ -654,6 +667,9 @@ export async function updateSupplierProductAction(formData: FormData) {
     || (parsed.data.imagePath && (!isMarketplaceImagePathForBusiness(parsed.data.imagePath, currentProduct.business_id) || !parsed.data.mediaPaths.includes(parsed.data.imagePath)))) {
     redirect("/supplier/marketplace?error=product");
   }
+  const mediaChecks = await Promise.all(parsed.data.mediaPaths.map((path) =>
+    supabase!.storage.from("marketplace-images").exists(path)));
+  if (mediaChecks.some(({ data, error }) => !data || error)) redirect("/supplier/marketplace?error=media" + editQuery);
   const { error } = await supabase!.rpc("update_supplier_product", {
     p_product_id: parsed.data.productId,
     p_name: parsed.data.name,
@@ -668,7 +684,7 @@ export async function updateSupplierProductAction(formData: FormData) {
   if (error) redirect("/supplier/marketplace?error=product");
   const nextImagePath = parsed.data.imagePath || null;
   const { error: imageError } = await supabase!.from("products")
-    .update({ image_path: nextImagePath, media_paths: parsed.data.mediaPaths }).eq("id", parsed.data.productId).eq("business_id", currentProduct.business_id);
+    .update({ image_path: nextImagePath, media_paths: parsed.data.mediaPaths }).eq("id", parsed.data.productId).eq("business_id", currentProduct.business_id).select("id").single();
   if (imageError) redirect("/supplier/marketplace?product=updated&image=error");
   const previousPaths = [...new Set([currentProduct.image_path, ...(currentProduct.media_paths ?? [])].filter((path): path is string => Boolean(path)))];
   const removedPaths = previousPaths.filter((path) => !parsed.data.mediaPaths.includes(path));
