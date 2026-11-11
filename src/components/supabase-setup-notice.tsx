@@ -1,10 +1,11 @@
 import { CircleAlert } from "lucide-react";
+import { hasPreviewCatalog } from "@/lib/supabase/public-catalog";
 
-export function SupabaseSetupNotice() {
+export function SupabaseSetupNotice({ catalogOnly = false }: { catalogOnly?: boolean }) {
   const configured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   );
-  if (configured) return null;
+  if (configured || (catalogOnly && hasPreviewCatalog())) return null;
   return (
     <div className="notice" role="status">
       <CircleAlert size={18} />

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Building2, MapPin, ShieldCheck, Zap } from "lucide-react";
 import { notFound } from "next/navigation";
 import { formatMoney, getMarketplaceImageUrl } from "@/lib/data";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createPublicCatalogClient } from "@/lib/supabase/public-catalog";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
 import { ProductPromotionTools } from "@/components/product-promotion-tools";
@@ -17,7 +17,7 @@ import { hasPaidAssistantAccess } from "@/lib/sales-assistant";
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ enquiry?: string; error?: string }> };
 
 async function getPublicProduct(id: string) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createPublicCatalogClient();
   if (!supabase) return null;
   const { data } = await supabase.from("products")
     .select("id,name,brand,condition,specifications,image_path,media_paths,category_id,created_at,updated_at,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(id,name,slug,country,region,city,area,description,verification_status,visibility)")
@@ -55,7 +55,7 @@ export default async function PublicProductPage({ params, searchParams }: Props)
   const query = await searchParams;
   const product = await getPublicProduct(id);
   if (!product) {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await createPublicCatalogClient();
     return supabase ? notFound() : <section className="page-container section-tight"><SupabaseSetupNotice /></section>;
   }
   const business = unwrap(product.businesses);
@@ -70,7 +70,9 @@ export default async function PublicProductPage({ params, searchParams }: Props)
   const assistant = assistantSettings?.data?.enabled && hasPaidAssistantAccess(assistantEntitlement?.data ?? null) ? assistantSettings.data : null;
   const imageUrl = getMarketplaceImageUrl(product.image_path);
   const storedMediaPaths = (product as typeof product & { media_paths?: string[] }).media_paths ?? [];
-  const mediaPaths = Array.from(new Set([...storedMediaPaths, product.image_path].filter((path): path is string => Boolean(path))));
+  const mediaPaths = Array.from(new Set([...storedMediaPaths, product.image_path]
+    .map((path) => getMarketplaceImageUrl(path))
+    .filter((url): url is string => Boolean(url))));
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",

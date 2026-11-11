@@ -5,7 +5,7 @@ import { ArrowRight, BadgeCheck, Building2, Boxes, MapPin, PackageSearch } from 
 import { createBusinessEnquiryAction, saveSupplierAction, updateBusinessEnquiryStatusAction } from "@/app/actions";
 import { getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
 import { formatMoney, getMarketplaceImageUrl } from "@/lib/data";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createPublicCatalogClient } from "@/lib/supabase/public-catalog";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { SharePageLink } from "@/components/share-page-link";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-url";
@@ -14,7 +14,7 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ enquir
 
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<import("next").Metadata> {
   const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createPublicCatalogClient();
   if (!supabase) return {};
   const withLogo = await supabase.from("businesses").select("id,name,city,country,description,logo_path").eq("slug", slug).eq("verification_status", "approved").eq("visibility", "public").maybeSingle();
   const fallback = withLogo.error
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
 export default async function BusinessProfilePage({ params, searchParams }: Props) {
   const [{ slug }, query, user] = await Promise.all([params, searchParams, getAuthenticatedUser()]);
   const marketplaceRole = user ? await getMarketplaceRole(user.id) : null;
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createPublicCatalogClient();
   if (!supabase) return <section className="page-container section-tight"><SupabaseSetupNotice /></section>;
 
   const withLogo = await supabase.from("businesses")

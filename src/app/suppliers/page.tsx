@@ -20,7 +20,7 @@ export default async function SuppliersPage() {
     <>
       <section className="page-hero"><div className="page-container"><span className="eyebrow"><BadgeCheck size={14} /> Approved businesses</span><h1>Meet StockSOS suppliers.</h1><p className="lead">Browse businesses that have completed supplier approval and made their profile public.</p></div></section>
       <section className="section-tight"><div className="page-container">
-        <SupabaseSetupNotice />
+        <SupabaseSetupNotice catalogOnly />
         {businesses.length ? <div className="card-grid">{businesses.map((business) => {
           const logoUrl = getMarketplaceImageUrl(business.logo_path);
           return <article className="feature-card supplier-directory-card" key={business.id}>

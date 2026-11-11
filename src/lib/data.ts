@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createPublicCatalogClient, publicCatalogUrl } from "@/lib/supabase/public-catalog";
 import { isMarketplaceImagePath } from "@/lib/image-path";
 
 export type Category = { id: string; name: string; slug: string };
@@ -93,7 +93,7 @@ function rankProducts(
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createPublicCatalogClient();
   if (!supabase) return [];
   const { data } = await supabase.from("categories").select("id, name, slug").eq("is_active", true).order("sort_order");
   return (data ?? []) as Category[];
@@ -112,7 +112,7 @@ export async function getProductsResult(
   filters?: { categoryId?: string; country?: string; city?: string; minPriceKobo?: number; maxPriceKobo?: number },
   limit = 40,
 ): Promise<ProductQueryResult> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createPublicCatalogClient();
   if (!supabase) return { products: [], error: "Supabase is not configured for this deployment." };
   let query = supabase.from("products")
     .select("id,name,brand,condition,specifications,image_path,business_id,category_id,created_at,inventory!inner(quantity_available,unit_price_kobo,currency),businesses!inner(name,city,region,country,slug)")
@@ -144,14 +144,14 @@ export async function getProductsResult(
 }
 
 export function getMarketplaceImageUrl(path: string | null | undefined) {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const base = publicCatalogUrl();
   if (!base || !path || !isMarketplaceImagePath(path)) return null;
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   return `${base.replace(/\/$/, "")}/storage/v1/object/public/marketplace-images/${encodedPath}`;
 }
 
 export async function getPublicBusinesses() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createPublicCatalogClient();
   if (!supabase) return [];
   const resultWithLogo = await supabase.from("businesses")
     .select("id,name,slug,country,region,city,area,description,logo_path,primary_category_id")
