@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { saveSignupProfileFromMetadata } from "@/lib/signup-profile-server";
 
 const allowedTypes: EmailOtpType[] = ["signup", "email", "recovery", "invite", "magiclink", "email_change"];
 function safeNext(value: string | null) {
@@ -19,5 +20,8 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
   if (error) return NextResponse.redirect(new URL("/auth/error", url.origin));
   const destination = type === "recovery" ? "/reset-password" : safeNext(url.searchParams.get("next"));
+  if (!await saveSignupProfileFromMetadata(supabase)) {
+    return NextResponse.redirect(new URL("/onboarding?error=save", url.origin));
+  }
   return NextResponse.redirect(new URL(destination, url.origin));
 }

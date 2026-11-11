@@ -5,13 +5,15 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { getAccountHome, getAuthenticatedUser, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
+import { getAccountHome, getAccountStatus, getAuthenticatedUser, requireAdmin, requireBuyer, requireSupplier, requireSupportStaff, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { moneyToMinorUnits } from "@/lib/money";
 import { isMarketplaceImagePathForBusiness, isMarketplaceMediaPathForBusiness } from "@/lib/image-path";
 import { isDisposableEmail } from "@/lib/disposable-email";
 import { hasSpecificProductTitle } from "@/lib/product-quality";
 import { publicProductRequirements, validProductMedia } from "@/lib/supplier-product";
+import { readSignupProfile, signupProfileSchema, supplierDraftIsComplete } from "@/lib/signup-profile";
+import { saveSignupProfileFromMetadata } from "@/lib/signup-profile-server";
 import { consumeRateLimit, getRequestIdentifier } from "@/lib/rate-limit";
 import { preserveBusinessLogos, preserveProductMedia, removePublicArchivedMedia } from "@/lib/marketplace-evidence";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -20,6 +22,11 @@ import { safeNextPath } from "@/lib/safe-next-path";
 function value(formData: FormData, name: string) {
   const raw = formData.get(name);
   return typeof raw === "string" ? raw.trim() : "";
+}
+
+function authCallbackBaseUrl() {
+  return process.env.NEXT_PUBLIC_APP_URL
+    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 }
 
 const signInSchema = z.object({
@@ -64,6 +71,8 @@ export async function signInAction(formData: FormData) {
   const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) redirect("/login?error=invalid");
   await supabase.rpc("clear_login_account_lockout");
+  if (readSignupProfile(signInData.user.user_metadata?.signup_profile)
+    && !await saveSignupProfileFromMetadata(supabase)) redirect("/onboarding?error=save");
   revalidatePath("/", "layout");
   redirect(safeNextPath(value(formData, "next")) ?? await getAccountHome(signInData.user.id));
 }
@@ -171,22 +180,43 @@ export async function verifyPhoneChangeOtpAction(_previous: PhoneOtpActionState,
   };
 }
 
-export async function signUpAction(formData: FormData) {
+export type SignUpState = {
+  error: "" | "invalid" | "business" | "category" | "password" | "duplicate" | "disposable" | "rate" | "signup" | "setup";
+  next?: string;
+};
+
+export async function signUpAction(_previous: SignUpState, formData: FormData): Promise<SignUpState> {
   const parsed = z.object({
     fullName: z.string().trim().min(2).max(120),
     email: z.email(),
     phone: e164PhoneSchema,
     password: z.string().min(10).max(128),
+    confirmPassword: z.string().min(10).max(128),
     marketplaceRole: z.enum(["buyer", "supplier"]),
   }).safeParse({
     fullName: value(formData, "full_name"),
     email: value(formData, "email").toLowerCase(),
     phone: normalizePhoneInput(value(formData, "phone")),
     password: value(formData, "password"),
+    confirmPassword: value(formData, "confirm_password"),
     marketplaceRole: value(formData, "marketplace_role"),
   });
-  if (!parsed.success) redirect("/register?error=invalid");
-  if (isDisposableEmail(parsed.data.email)) redirect("/register?error=disposable");
+  const profile = signupProfileSchema.safeParse({
+    country: value(formData, "country").toUpperCase(),
+    region: value(formData, "region"),
+    city: value(formData, "city"),
+    postalCode: value(formData, "postal_code"),
+    area: value(formData, "area"),
+    address: value(formData, "address"),
+    defaultDeliveryMethod: value(formData, "default_delivery_method"),
+    businessName: value(formData, "business_name"),
+    businessCategoryId: value(formData, "business_category_id"),
+    businessDescription: value(formData, "business_description"),
+  });
+  if (!parsed.success || !profile.success) return { error: "invalid" };
+  if (parsed.data.password !== parsed.data.confirmPassword) return { error: "password" };
+  if (parsed.data.marketplaceRole === "supplier" && !supplierDraftIsComplete(profile.data)) return { error: "business" };
+  if (isDisposableEmail(parsed.data.email)) return { error: "disposable" };
   const signupHeaders = await headers();
   const signupLimit = await consumeRateLimit({
     scope: "register-ip",
@@ -194,21 +224,31 @@ export async function signUpAction(formData: FormData) {
     limit: 8,
     windowSeconds: 60 * 60,
   });
-  if (signupLimit.configured && !signupLimit.allowed) redirect("/register?error=rate");
+  if (signupLimit.configured && !signupLimit.allowed) return { error: "rate" };
   const supabase = await createSupabaseServerClient();
-  if (!supabase) redirect("/register?setup=required");
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  if (!supabase) return { error: "setup" };
+  if (parsed.data.marketplaceRole === "supplier") {
+    const { data: category, error: categoryError } = await supabase.from("categories")
+      .select("id").eq("id", profile.data.businessCategoryId).eq("is_active", true).maybeSingle();
+    if (categoryError || !category) return { error: "category" };
+  }
+  const baseUrl = authCallbackBaseUrl();
   const { data: signUpData, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: { full_name: parsed.data.fullName, marketplace_role: parsed.data.marketplaceRole, phone: parsed.data.phone },
+      data: { full_name: parsed.data.fullName, marketplace_role: parsed.data.marketplaceRole,
+        phone: parsed.data.phone, signup_profile: profile.data },
       emailRedirectTo: new URL("/auth/callback?next=/onboarding", baseUrl).toString(),
     },
   });
-  if (error) redirect(error.message.toLowerCase().includes("already") ? "/register?error=duplicate" : "/register?error=signup");
-  if (signUpData.user && signUpData.user.identities?.length === 0) redirect("/register?error=duplicate");
-  redirect("/check-email");
+  if (error) return { error: error.message.toLowerCase().includes("already") ? "duplicate" : "signup" };
+  if (signUpData.user && signUpData.user.identities?.length === 0) return { error: "duplicate" };
+  if (signUpData.session) {
+    const saved = await saveSignupProfileFromMetadata(supabase);
+    return { error: "", next: saved ? "/onboarding" : "/onboarding?error=save" };
+  }
+  return { error: "", next: "/check-email" };
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
@@ -216,7 +256,7 @@ export async function requestPasswordResetAction(formData: FormData) {
   if (!z.email().safeParse(email).success) redirect("/forgot-password?error=invalid");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/forgot-password?setup=required");
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const baseUrl = authCallbackBaseUrl();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: new URL("/auth/callback?next=/reset-password&type=recovery", baseUrl).toString(),
   });
@@ -249,7 +289,7 @@ export async function signOutAction() {
 }
 
 export async function saveOnboardingAction(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireUser({ allowPending: true });
   const parsed = z.object({
     fullName: z.string().trim().min(2).max(120),
     phone: z.string().trim().max(30).optional(),
@@ -287,7 +327,8 @@ export async function saveOnboardingAction(formData: FormData) {
   }).eq("id", user.id);
   if (error) redirect("/onboarding?error=save");
   revalidatePath("/dashboard");
-  redirect(await getAccountHome(user.id));
+  const status = await getAccountStatus(user.id);
+  redirect(status && status !== "approved" ? "/account-status" : await getAccountHome(user.id));
 }
 
 export async function createBusinessApplicationAction(formData: FormData) {

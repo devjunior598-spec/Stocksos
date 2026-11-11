@@ -14,12 +14,13 @@ function toSlug(value: string) {
     .replace(/-+$/g, "");
 }
 
-export function BusinessLinkFields() {
-  const [name, setName] = useState("");
+export function BusinessLinkFields({ initialName = "" }: { initialName?: string }) {
+  const [name, setName] = useState(initialName);
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const suggestedSlug = useMemo(() => toSlug(name), [name]);
   const effectiveSlug = slugEdited ? slug : suggestedSlug;
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://stocksosglobal.com";
 
   return <>
     <div className="form-field">
@@ -29,7 +30,7 @@ export function BusinessLinkFields() {
     <div className="form-field">
       <label htmlFor="slug">Shareable business link</label>
       <input id="slug" name="slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={120} placeholder="your-business-name" value={effectiveSlug} onChange={(event) => { setSlugEdited(true); setSlug(toSlug(event.target.value)); }} aria-describedby="business-link-preview business-link-hint" />
-      <span className="form-hint" id="business-link-preview">{effectiveSlug ? `Shareable link: socksos.vercel.app/business/${effectiveSlug}` : "Your link will appear here as you type your business name."}</span>
+      <span className="form-hint" id="business-link-preview">{effectiveSlug ? `Shareable link: ${siteUrl}/business/${effectiveSlug}` : "Your link will appear here as you type your business name."}</span>
       <span className="form-hint" id="business-link-hint">You can edit the suggested link. It becomes public after your business is approved.</span>
     </div>
   </>;

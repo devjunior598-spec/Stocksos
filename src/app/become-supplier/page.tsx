@@ -7,6 +7,8 @@ import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
 import { GlobalLocationFields } from "@/components/global-location-fields";
 import { BusinessLinkFields } from "@/components/business-link-fields";
 import { BusinessLogoUpload } from "@/components/business-logo-upload";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { readSignupProfile } from "@/lib/signup-profile";
 
 type Props = { searchParams: Promise<{ error?: string; applied?: string; field?: string }> };
 
@@ -19,6 +21,13 @@ export default async function BecomeSupplierPage({ searchParams }: Props) {
   const params = await searchParams;
   const user = await getAuthenticatedUser();
   const marketplaceRole = user ? await getMarketplaceRole(user.id) : null;
+  const supabase = user ? await createSupabaseServerClient() : null;
+  const [authData, profileData] = user && supabase ? await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from("profiles").select("home_country,home_region,home_city,home_postal_code,home_area").eq("id", user.id).maybeSingle(),
+  ]) : [null, null];
+  const signupDraft = readSignupProfile(authData?.data.user?.user_metadata?.signup_profile);
+  const savedLocation = profileData?.data;
   const categories = await getCategories();
   const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
   return (
@@ -31,22 +40,29 @@ export default async function BecomeSupplierPage({ searchParams }: Props) {
             {params.error ? <div className="notice error-notice" role="alert"><div><strong>{params.error === "invalid" ? "A required detail needs attention." : "We couldn’t submit the application."}</strong><p>{params.error === "slug" ? "That business link is already taken. Change the shareable link and try again." : params.error === "role" ? "A supplier account approved by StockSOS is required before registering a business." : params.error === "logo" ? "Use a valid JPG, PNG or WebP business image no larger than 5 MB." : params.error === "invalid" ? `Check the ${fieldLabels[params.field ?? ""] ?? "business details"} and try again.` : "The application could not be saved. Please try again; if it continues, contact StockSOS support."}</p></div></div> : null}
             <div className="auth-panel business-application-form">
               <div className="business-form-intro"><span className="eyebrow">Business details</span><h2>Build a profile buyers can trust.</h2><p>Required details help StockSOS verify and match your business. You can add and manage your products after setup.</p></div>
+              {signupDraft?.businessName ? <div className="notice"><div><strong>Your sign-up details are ready.</strong><p>Review the prefilled business and location fields, add any optional details, then submit this profile to create your storefront.</p></div></div> : null}
               <form action={createBusinessApplicationAction}>
                 <section className="business-form-section" aria-labelledby="business-identity-heading">
                   <div className="form-section-heading"><span id="business-identity-heading">1. Business identity</span><small>How buyers recognize your company</small></div>
-                  <BusinessLinkFields />
+                  <BusinessLinkFields initialName={signupDraft?.businessName ?? ""} />
                   <BusinessLogoUpload />
-                  <div className="form-field"><label htmlFor="category_id">Main business category</label><select id="category_id" name="category_id" required defaultValue=""><option value="" disabled>Select a category</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><span className="form-hint">Choose the category that best describes the products you plan to list.</span></div>
+                  <div className="form-field"><label htmlFor="category_id">Main business category</label><select id="category_id" name="category_id" required defaultValue={categories.some((category) => category.id === signupDraft?.businessCategoryId) ? signupDraft?.businessCategoryId : ""}><option value="" disabled>Select a category</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><span className="form-hint">Choose the category that best describes the products you plan to list.</span></div>
                 </section>
-                <GlobalLocationFields includeAddress={false} description="Used for global discovery and local supplier matching." />
+                <GlobalLocationFields includeAddress={false} description="Used for global discovery and local supplier matching." defaults={{
+                  country: savedLocation?.home_country ?? signupDraft?.country,
+                  region: savedLocation?.home_region ?? signupDraft?.region,
+                  city: savedLocation?.home_city ?? signupDraft?.city,
+                  postalCode: savedLocation?.home_postal_code ?? signupDraft?.postalCode,
+                  area: savedLocation?.home_area ?? signupDraft?.area,
+                }} />
                 <section className="business-form-section" aria-labelledby="business-contact-heading">
                   <div className="form-section-heading"><span id="business-contact-heading">3. Contact and business details</span><small>Helps StockSOS reach you about your account</small></div>
                   <div className="form-grid">
-                    <div className="form-field"><label htmlFor="phone">Business phone <span className="muted">(optional)</span></label><input id="phone" name="phone" type="tel" maxLength={30} autoComplete="tel" placeholder="Include country calling code" /></div>
-                    <div className="form-field"><label htmlFor="email">Business email <span className="muted">(optional)</span></label><input id="email" name="email" type="email" autoComplete="email" placeholder="name@business.com" /></div>
+                    <div className="form-field"><label htmlFor="phone">Business phone <span className="muted">(optional)</span></label><input id="phone" name="phone" type="tel" maxLength={30} autoComplete="tel" placeholder="Include country calling code" defaultValue={user.signupPhone ?? ""} /></div>
+                    <div className="form-field"><label htmlFor="email">Business email <span className="muted">(optional)</span></label><input id="email" name="email" type="email" autoComplete="email" placeholder="name@business.com" defaultValue={user.email ?? ""} /></div>
                   </div>
                   <div className="form-field"><label htmlFor="registration_number">Business registration number <span className="muted">(optional)</span></label><input id="registration_number" name="registration_number" maxLength={100} autoComplete="off" placeholder="Enter only if your business has one" /><span className="form-hint">Do not enter a personal identification number. This field is for your business registration reference.</span></div>
-                  <div className="form-field"><label htmlFor="description">Business introduction <span className="muted">(optional)</span></label><textarea id="description" name="description" maxLength={1000} placeholder="What products do you supply? Who do you serve? What makes ordering from your business straightforward?" /><span className="form-hint">A clear, specific introduction helps buyers decide whether your business fits their needs. Up to 1,000 characters.</span></div>
+                  <div className="form-field"><label htmlFor="description">Business introduction <span className="muted">(optional)</span></label><textarea id="description" name="description" maxLength={1000} defaultValue={signupDraft?.businessDescription ?? ""} placeholder="What products do you supply? Who do you serve? What makes ordering from your business straightforward?" /><span className="form-hint">A clear, specific introduction helps buyers decide whether your business fits their needs. Up to 1,000 characters.</span></div>
                 </section>
                 <div className="notice"><BadgeCheck size={16} /><div><strong>Your profile is reviewed before it appears publicly.</strong><p>Only approved businesses and published listings are discoverable. Contact details and registration references are used for account operations and are not displayed on the public storefront.</p></div></div>
                 <button className="button button-primary form-submit" type="submit">Submit business application <ArrowRight size={15} /></button>

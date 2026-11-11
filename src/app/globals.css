@@ -1754,6 +1754,16 @@ textarea:focus-visible, summary:focus-visible { outline: 3px solid rgba(8, 127, 
 .auth-layout .auth-panel { padding: 26px; border: 1px solid #dce8df; border-radius: 20px; box-shadow: 0 20px 50px rgba(24, 63, 41, .08); }
 .auth-layout .form-field label { color: #2c4438; }
 .auth-layout .form-field input:focus { border-color: #3b9b70; box-shadow: 0 0 0 3px rgba(59, 155, 112, .12); }
+.register-form > .notice { margin-bottom: 18px; }
+.register-section-heading { display: grid; gap: 4px; margin: 24px 0 14px; padding-top: 19px; border-top: 1px solid #e4ebe5; }
+.register-section-heading strong { color: #173e2c; font-size: 14px; }
+.register-section-heading span { color: #708378; font-size: 11px; line-height: 1.5; }
+.register-form .location-fields { margin-top: 0; }
+.register-form .location-fields > .form-section-heading { display: none; }
+.register-supplier-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.register-supplier-fields[hidden] { display: none; }
+.register-followup-note { margin: 2px 0 0; padding: 11px 13px; border-radius: 10px; color: #526c5b; background: #f2f7f3; font-size: 11px; line-height: 1.55; }
+.register-form .form-submit { margin-top: 20px; }
 .auth-story { position: sticky; top: 94px; min-height: 550px; overflow: hidden; padding: clamp(30px, 4vw, 48px); border-radius: 24px; color: #e5f3e8; background: radial-gradient(circle at 92% 7%, rgba(119, 203, 147, .23), transparent 38%), linear-gradient(155deg, #102b24, #1c5038); box-shadow: 0 24px 60px rgba(18, 56, 36, .16); }
 .auth-story::before { position: absolute; right: -130px; bottom: -170px; width: 360px; height: 360px; border: 1px solid rgba(216, 245, 225, .13); border-radius: 50%; content: ""; pointer-events: none; }
 .auth-story-kicker { display: inline-flex; align-items: center; gap: 9px; color: #bce9c9; font-size: 10px; font-weight: 800; letter-spacing: .13em; }

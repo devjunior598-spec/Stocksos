@@ -7,9 +7,6 @@ const FIELD_LABELS: Array<[string, string]> = [
   ["home_country", "country"],
   ["home_region", "state / region"],
   ["home_city", "city"],
-  ["home_postal_code", "postal / ZIP code"],
-  ["home_area", "area"],
-  ["home_address", "delivery address"],
 ];
 
 export async function ProfileCompletionBanner() {
@@ -18,7 +15,7 @@ export async function ProfileCompletionBanner() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data, error } = await supabase.from("profiles")
-    .select("platform_role,marketplace_role,home_country,home_region,home_city,home_postal_code,home_area,home_address")
+    .select("platform_role,marketplace_role,home_country,home_region,home_city")
     .eq("id", user.id)
     .maybeSingle();
   if (error || !data || data.platform_role === "admin") return null;

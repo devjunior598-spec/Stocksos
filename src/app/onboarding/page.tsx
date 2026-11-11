@@ -5,16 +5,19 @@ import { getMarketplaceRole, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlobalLocationFields } from "@/components/global-location-fields";
 import { PhoneLoginSetup } from "@/components/phone-login-setup";
+import { readSignupProfile } from "@/lib/signup-profile";
 
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ error?: string }> };
 
 export default async function OnboardingPage({ searchParams }: Props) {
-  const user = await requireUser();
+  const user = await requireUser({ allowPending: true });
   const marketplaceRole = await getMarketplaceRole(user.id);
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
+  const { data: authData } = await supabase!.auth.getUser();
+  const signupDraft = readSignupProfile(authData.user?.user_metadata?.signup_profile);
   const extended = await supabase!.from("profiles").select("full_name, phone, home_city, home_country, home_region, home_postal_code, home_area, home_address, default_delivery_method, account_status").eq("id", user.id).maybeSingle();
   const { data } = extended.error
     ? await supabase!.from("profiles").select("full_name, phone, home_city").eq("id", user.id).maybeSingle()
@@ -43,9 +46,11 @@ export default async function OnboardingPage({ searchParams }: Props) {
     : profile.default_delivery_method === "delivery" ? "Delivery"
       : profile.default_delivery_method === "flexible" ? "No preference"
         : "Pickup or delivery";
-  const workspace = marketplaceRole === "supplier"
-    ? { href: "/supplier", label: "Supplier Workspace" }
-    : { href: "/dashboard", label: "Buyer dashboard" };
+  const workspace = accountStatus && accountStatus !== "approved"
+    ? { href: "/account-status", label: "Account review" }
+    : marketplaceRole === "supplier"
+      ? { href: "/supplier", label: "Supplier Workspace" }
+      : { href: "/dashboard", label: "Buyer dashboard" };
   return (
     <section className="dashboard-shell">
       <div className="page-container">
@@ -65,14 +70,14 @@ export default async function OnboardingPage({ searchParams }: Props) {
             <div className="form-field"><label htmlFor="full_name">Your name</label><input id="full_name" name="full_name" defaultValue={data?.full_name ?? ""} required minLength={2} maxLength={120} autoComplete="name" /></div>
             <div className="form-field"><label htmlFor="phone">Mobile / business phone</label><input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={data?.phone ?? user.signupPhone ?? ""} autoComplete="tel" maxLength={30} placeholder="Include country code, e.g. +14155552671" /><span className="form-hint">This is your contact number and the number you can verify for SMS sign-in.</span></div>
             <GlobalLocationFields description={marketplaceRole === "supplier" ? "Saved securely as your default business location." : "Saved securely to speed up future sourcing and fulfilment."} defaults={{
-              country: profile.home_country,
-              region: profile.home_region,
-              city: profile.home_city,
-              postalCode: profile.home_postal_code,
-              area: profile.home_area,
-              address: profile.home_address,
+              country: profile.home_country ?? signupDraft?.country,
+              region: profile.home_region ?? signupDraft?.region,
+              city: profile.home_city ?? signupDraft?.city,
+              postalCode: profile.home_postal_code ?? signupDraft?.postalCode,
+              area: profile.home_area ?? signupDraft?.area,
+              address: profile.home_address ?? signupDraft?.address,
             }} />
-            <div className="form-field"><label htmlFor="default_delivery_method">Default fulfilment preference</label><select id="default_delivery_method" name="default_delivery_method" defaultValue={profile.default_delivery_method ?? "both"}><option value="both">Both: pickup or delivery</option><option value="delivery">Delivery to me</option><option value="pickup">I can pick it up</option><option value="flexible">No preference</option></select><span className="form-hint"><MapPin size={12} /> “Both” lets you choose pickup or delivery for each request. “No preference” lets the supplier recommend.</span></div>
+            <div className="form-field"><label htmlFor="default_delivery_method">Default fulfilment preference</label><select id="default_delivery_method" name="default_delivery_method" defaultValue={profile.home_country ? profile.default_delivery_method ?? "both" : signupDraft?.defaultDeliveryMethod ?? profile.default_delivery_method ?? "both"}><option value="both">Both: pickup or delivery</option><option value="delivery">Delivery to me</option><option value="pickup">I can pick it up</option><option value="flexible">No preference</option></select><span className="form-hint"><MapPin size={12} /> “Both” lets you choose pickup or delivery for each request. “No preference” lets the supplier recommend.</span></div>
             <button className="button button-primary form-submit" type="submit">Save profile <ArrowRight size={16} /></button>
           </form>
           </section>
