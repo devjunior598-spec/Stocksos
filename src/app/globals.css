@@ -1952,3 +1952,11 @@ textarea:focus-visible, summary:focus-visible { outline: 3px solid rgba(8, 127, 
   .home-product-card:not(.home-product-featured) .product-placeholder { height: auto; min-height: 0; aspect-ratio: 1.8; }
 }
 @media (prefers-reduced-motion: reduce) { .voice-status-listening::before { animation: none; } }
+.footer-phone { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px; color: #e5f4eb; font-size: 12px; font-weight: 700; }
+.footer-phone:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.contact-phone { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 16px; color: var(--navy); font-size: 13px; }
+.contact-phone a { color: var(--blue-dark); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.page-container.contact-phone { margin-top: -34px; margin-bottom: 42px; }
+.launch-archive-record { max-height: 420px; overflow: auto; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #f6f8f6; color: var(--ink); font-size: 11px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-directory-row details { width: 100%; }
+.admin-directory-row summary { cursor: pointer; }

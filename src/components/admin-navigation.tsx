@@ -13,6 +13,7 @@ const items = [
   { href: "/admin/support", label: "Support", icon: LifeBuoy },
   { href: "/admin/activity", label: "Activity", icon: Activity },
   { href: "/admin/removed", label: "Removed records", icon: Archive },
+  { href: "/admin/launch-archive", label: "Launch archive", icon: Archive },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },
 ];
 
