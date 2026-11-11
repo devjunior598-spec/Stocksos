@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, Home, LifeBuoy, Settings2, ShieldCheck, ShoppingBag, Users } from "lucide-react";
+import { Activity, Archive, Home, LifeBuoy, Settings2, ShieldCheck, ShoppingBag, Users } from "lucide-react";
 import { signOutAction } from "@/app/actions";
 import { requireAdmin } from "@/lib/auth";
 
@@ -11,6 +11,7 @@ const adminNavigation = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/support", label: "Support", icon: LifeBuoy },
   { href: "/admin/activity", label: "Activity", icon: Activity },
+  { href: "/admin/launch-archive", label: "Removed stores", icon: Archive },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },
 ];
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Phone } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -12,6 +12,7 @@ export function SiteFooter() {
             <span>Stock<span className="brand-accent">SOS</span></span>
           </Link>
           <p>Find the stock you need and connect with businesses ready to supply it.</p>
+          <a className="footer-phone" href="tel:+2349072022111"><Phone size={14} /> Customer service: +234 907 202 2111</a>
           <span className="footer-location"><span className="status-dot" /> Connecting businesses and suppliers worldwide.</span>
         </div>
         <div className="footer-links">
