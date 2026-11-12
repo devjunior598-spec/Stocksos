@@ -222,13 +222,42 @@
 }
 
 .checkout {
-  margin-top: 28px;
+  margin-top: 13px;
   padding: clamp(21px, 3.2vw, 35px);
   border: 1px solid #d6e4d9;
   border-radius: 23px;
   background: #fff;
   box-shadow: 0 20px 45px rgba(18, 59, 39, .055);
 }
+
+.backToPlans {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #176b4d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.checkoutBenefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkoutBenefits li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #315642;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.checkoutBenefits svg { flex: 0 0 auto; color: #158255; }
 
 .checkoutHeading {
   display: flex;

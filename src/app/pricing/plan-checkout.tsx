@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Building2, Check, CreditCard, Landmark, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Building2, CreditCard, Landmark, LockKeyhole } from "lucide-react";
 import type { ReferenceRates } from "@/lib/pricing-localization";
 import { estimateLocalMinor } from "@/lib/local-currency-estimate";
 import styles from "./pricing.module.css";
@@ -38,6 +38,7 @@ type Props = {
   isSupplier: boolean;
   checkoutConfigured: boolean;
   usdCardEnabled: boolean;
+  checkoutPlanId?: string;
 };
 
 function money(amountMinor: number, currency: string) {
@@ -57,9 +58,8 @@ function localEstimate(amountMinor: number, chargedCurrency: "NGN" | "USD", disp
   return { label: money(convertedMinor, displayCurrency), approximate: chargedCurrency !== displayCurrency };
 }
 
-export function PlanCheckout({ plans, prices, countries, suggestedCountry, referenceRates, businesses, isSignedIn, isSupplier, checkoutConfigured, usdCardEnabled }: Props) {
-  const paidPlans = plans.filter((plan) => plan.id !== "free");
-  const [selectedPlanId, setSelectedPlanId] = useState(paidPlans[0]?.id ?? "");
+export function PlanCheckout({ plans, prices, countries, suggestedCountry, referenceRates, businesses, isSignedIn, isSupplier, checkoutConfigured, usdCardEnabled, checkoutPlanId }: Props) {
+  const selectedPlanId = checkoutPlanId ?? "";
   const [businessId, setBusinessId] = useState(businesses[0]?.id ?? "");
   const [previewCountry, setPreviewCountry] = useState(suggestedCountry);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "bank_transfer">("card");
@@ -70,7 +70,7 @@ export function PlanCheckout({ plans, prices, countries, suggestedCountry, refer
   const displayCurrency = countries.find((country) => country.code === previewCountry)?.currency || "USD";
   const countryName = countries.find((country) => country.code === billingCountry)?.name ?? billingCountry;
   const currency = billingCountry === "NG" ? "NGN" : "USD";
-  const selectedPlan = paidPlans.find((plan) => plan.id === selectedPlanId);
+  const selectedPlan = plans.find((plan) => plan.id === selectedPlanId && plan.id !== "free");
   const selectedPrice = prices.find((price) => price.plan_id === selectedPlanId && price.currency === currency);
   const method = billingCountry === "NG" ? paymentMethod : "card";
 
@@ -120,7 +120,7 @@ export function PlanCheckout({ plans, prices, countries, suggestedCountry, refer
 
   return (
     <>
-      <div className={styles.localCurrencyBar}>
+      {!checkoutPlanId ? <><div className={styles.localCurrencyBar}>
         <div><strong>Prices for your location</strong><p>Country is suggested from your connection. Change it if you are browsing from elsewhere. Your IP is not saved as a pricing preference.</p></div>
         <label className={styles.field}><span>Display country</span><select value={previewCountry} onChange={(event) => { setPreviewCountry(event.target.value); setError(""); }}><option value="">Choose a country</option>{countries.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
       </div>
@@ -131,12 +131,10 @@ export function PlanCheckout({ plans, prices, countries, suggestedCountry, refer
           const referenceAmount = price?.amount_minor ?? plan.monthlyPriceUsdMinor;
           const referenceCurrency = price?.currency ?? "USD";
           const local = paid ? localEstimate(referenceAmount, referenceCurrency, displayCurrency, referenceRates) : null;
-          const selected = paid && plan.id === selectedPlanId;
           return (
-            <article className={`${styles.planCard} ${selected ? styles.selectedPlan : ""}`} key={plan.id}>
+            <article className={styles.planCard} key={plan.id}>
               <div className={styles.planTop}>
                 <span className={styles.planLabel}>{paid ? "For growing suppliers" : "A confident start"}</span>
-                {selected ? <span className={styles.selectedBadge}><Check size={13} /> Selected</span> : null}
               </div>
               <h2>{plan.name}</h2>
               <div className={styles.price}>
@@ -149,9 +147,9 @@ export function PlanCheckout({ plans, prices, countries, suggestedCountry, refer
                 {plan.benefits.map((benefit) => <li key={benefit}><BadgeCheck size={16} aria-hidden="true" /><span>{benefit}</span></li>)}
               </ul>
               {paid ? (
-                <button className={`${styles.planAction} ${selected ? styles.planActionSelected : ""}`} type="button" onClick={() => { setSelectedPlanId(plan.id); setError(""); }} aria-pressed={selected}>
-                  {selected ? "Review selected plan" : "Review this plan"} <ArrowRight size={16} />
-                </button>
+                <Link className={styles.planAction} href={`/pricing/checkout/${encodeURIComponent(plan.id)}${previewCountry ? `?country=${encodeURIComponent(previewCountry)}` : ""}`}>
+                  Choose {plan.name} <ArrowRight size={16} />
+                </Link>
               ) : (
                 <Link className={styles.planAction} href={isSupplier ? "/supplier" : "/become-supplier"}>
                   {isSupplier ? "Open workspace" : "Get started"} <ArrowRight size={16} />
@@ -161,12 +159,14 @@ export function PlanCheckout({ plans, prices, countries, suggestedCountry, refer
           );
         })}
       </div>
+      <p className={styles.fxNote}>Local currency amounts marked ≈ use indicative reference rates; publication dates vary by currency. The exact charge is shown in the checkout currency before payment. <a href="https://frankfurter.dev/" target="_blank" rel="noreferrer">Reference rate source</a>.</p></> : null}
 
-      {selectedPlan ? <form className={styles.checkout} onSubmit={startCheckout}>
+      {selectedPlan ? <><Link className={styles.backToPlans} href="/pricing"><ArrowLeft size={15} /> Back to all plans</Link><form className={styles.checkout} onSubmit={startCheckout}>
         <div className={styles.checkoutHeading}>
           <div className={styles.checkoutIcon}><LockKeyhole size={20} /></div>
           <div><span className="eyebrow">Upgrade preview</span><h2>Review your {selectedPlan.name} upgrade</h2><p>Choose the business and payment method before opening a secure Paystack checkout.</p></div>
         </div>
+        <ul className={styles.checkoutBenefits}>{selectedPlan.benefits.map((benefit) => <li key={benefit}><BadgeCheck size={15} />{benefit}</li>)}</ul>
 
         <div className={styles.checkoutFields}>
           <label className={styles.field}>
@@ -199,12 +199,12 @@ export function PlanCheckout({ plans, prices, countries, suggestedCountry, refer
           <div className={styles.total}><span>One prepaid month · actual checkout currency</span><strong>{selectedPrice ? money(selectedPrice.amount_minor, selectedPrice.currency) : "Price unavailable"}</strong><small>Access begins only after StockSOS verifies the payment. It ends after one month unless you renew. Your bank may convert the charge to your card currency at its own rate.</small></div>
           <div className={styles.checkoutAction}>
             {setupMessage ? <p className={styles.unavailable} role="status">{setupMessage}</p> : null}
+            {!isSignedIn ? <Link className="text-link" href={`/login?next=${encodeURIComponent(`/pricing/checkout/${selectedPlan.id}`)}`}>Sign in to continue <ArrowRight size={14} /></Link> : null}
             {error ? <p className={styles.checkoutError} role="alert">{error}</p> : null}
             <button className="button button-primary" type="submit" disabled={Boolean(setupMessage) || busy}>{busy ? "Opening secure checkout…" : "Continue to payment"} <ArrowRight size={16} /></button>
           </div>
         </div>
-      </form> : null}
-      <p className={styles.fxNote}>Local currency amounts marked ≈ use indicative reference rates; publication dates vary by currency. The exact charge is shown in the checkout currency before payment. <a href="https://frankfurter.dev/" target="_blank" rel="noreferrer">Reference rate source</a>.</p>
+      </form></> : null}
     </>
   );
 }
