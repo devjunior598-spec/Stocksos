@@ -802,7 +802,7 @@ body:has(.admin-console) { padding-bottom: 0; }
   body { padding-bottom: 76px; }
   .mobile-bottom-nav { position: fixed; z-index: 40; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid #e6eaf1; background: rgba(255, 255, 255, .97); backdrop-filter: blur(14px); }
   .mobile-bottom-nav a { display: flex; min-height: 46px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #63718a; font-size: 9px; font-weight: 700; }
-  .mobile-bottom-nav a:nth-child(2) { color: var(--blue); }
+  .mobile-bottom-nav a[aria-current="page"] { color: var(--blue); }
   .mobile-bottom-nav svg { width: 18px; height: 18px; }
   .supplier-columns, .admin-columns, .order-detail-grid, .business-profile-grid { grid-template-columns: 1fr; }
   .public-share { width: 100%; }
