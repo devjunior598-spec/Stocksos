@@ -5,7 +5,7 @@
 **Controller/operator:** [legal name and registration details] (“StockSOS,” “we,” “us,” or “our”)  
 **Address:** [business address]  
 **Privacy contact:** [public email or other accessible contact method]  
-**Website:** https://socksos.vercel.app  
+**Website:** https://stocksosglobal.com
 **Effective date:** [date]  
 **Data protection officer or representative, if required:** [details or state not applicable after review]
 
@@ -21,8 +21,8 @@ Depending on the features used, information may include:
 - **Supplier and public listing:** business name, business link, category, location, description, contact or registration details supplied during application, verification information where collected, product details, price, quantity, availability, and uploaded photos or videos. Public business and product pages can be viewed by others and indexed by search engines.
 - **Marketplace activity:** search text, sourcing requests, quantities, location, specifications, urgency, quotations, orders, fulfillment and delivery details, saved suppliers, enquiries, reviews and support messages. Do not include information that is not needed for a request.
 - **Voice:** if you use native voice recognition, your device or browser’s speech provider may process audio according to its own settings and policy. If enabled and you choose backup transcription, a short recording is sent through StockSOS to OpenAI for transcription; recognized text can be reviewed before submission. The reviewed route does not save the audio as an application record, but provider and infrastructure handling must be confirmed. Avoid speaking sensitive information that is not necessary.
-- **Technical and security information:** session cookies, request and device or browser information, IP address and security events needed to operate and protect the service. The login code uses a hash derived from the request IP for throttling. [Confirm actual infrastructure logs, analytics, cookies and retention in production.]
-- **Payment information if enabled:** order and transaction references, status, amounts and provider responses. Online payment initialization is currently paused in the reviewed code. If enabled, the provider may collect payment details directly under its policy. [Confirm payment data flows and providers before publication.]
+- **Technical and security information:** session cookies, request and device or browser information, IP address and security events needed to operate and protect the service. The login code uses a hash derived from the request IP for throttling. Vercel supplies an approximate country derived from the visitor's IP to suggest a display currency on the pricing page; the application does not save the raw IP as a pricing preference. [Confirm actual infrastructure logs, analytics, cookies and retention in production.]
+- **Payment information if enabled:** order and supplier-plan transaction references, status, amounts, billing country, selected method and provider responses. Online payment initialization remains disabled until the required provider and business setup is approved. If enabled, Paystack may collect payment details directly under its policy. The pricing page fetches reference exchange rates from Frankfurter on the server to show indicative local-currency amounts, without sending visitor IPs to Frankfurter. [Confirm payment data flows, providers and retention before publication.]
 
 We receive information from you, from your business’s authorized users, from other marketplace participants and, where enabled, from service or connected-platform providers. [Confirm other sources and categories.]
 

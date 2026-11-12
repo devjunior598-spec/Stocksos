@@ -1,28 +1,106 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck } from "lucide-react";
+import { ArrowRight, CircleHelp, CreditCard, ShieldCheck } from "lucide-react";
+import { Country } from "country-state-city";
+import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { formatMoney } from "@/lib/data";
+import { createPublicCatalogClient } from "@/lib/supabase/public-catalog";
+import { getAuthenticatedUser, getMarketplaceRole } from "@/lib/auth";
+import { getSubscriptionPaymentConfig } from "@/lib/subscription-config";
+import { getReferenceRates } from "@/lib/pricing-localization";
 import { SupabaseSetupNotice } from "@/components/supabase-setup-notice";
+import { PlanCheckout, type Plan, type PlanPrice, type SupplierBusiness } from "./plan-checkout";
+import styles from "./pricing.module.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function PricingPage() {
+export default async function PricingPage({ searchParams }: { searchParams: Promise<{ upgrade?: string }> }) {
+  const params = await searchParams;
+  const requestHeaders = await headers();
+  const visitorCountry = requestHeaders.get("x-vercel-ip-country")?.toUpperCase() ?? "";
+  const countryData = Country.getAllCountries();
+  const suggestedCountry = countryData.some((country) => country.isoCode === visitorCountry) ? visitorCountry : "";
+  const referenceRates = await getReferenceRates();
   const supabase = await createSupabaseServerClient();
-  const { data } = supabase
-    ? await supabase.from("subscription_plans").select("id,name,monthly_price_kobo,benefits").eq("is_active", true).order("monthly_price_kobo")
-    : { data: null };
-  const plans = (data ?? []) as { id: string; name: string; monthly_price_kobo: number; benefits: string[] }[];
+  const catalog = supabase ?? await createPublicCatalogClient();
+  const user = supabase ? await getAuthenticatedUser() : null;
+  const isSupplier = user ? await getMarketplaceRole(user.id) === "supplier" : false;
+  const [plansResult, pricesResult, businessesResult] = catalog
+    ? await Promise.all([
+        catalog.from("subscription_plans").select("id,name,monthly_price_kobo,benefits").eq("is_active", true).order("monthly_price_kobo"),
+        catalog.from("subscription_plan_prices").select("plan_id,currency,amount_minor,is_active").eq("is_active", true),
+        user && isSupplier && supabase
+          ? supabase.from("business_memberships")
+              .select("business_id,role,businesses(id,name,country,verification_status)")
+              .eq("user_id", user.id)
+              .in("role", ["owner", "admin"])
+          : Promise.resolve({ data: [], error: null }),
+      ])
+    : [{ data: null, error: null }, { data: null, error: null }, { data: null, error: null }];
+
+  const plans = (plansResult.data ?? []).map((plan): Plan => ({
+    id: plan.id,
+    name: plan.name,
+    monthlyPriceUsdMinor: plan.monthly_price_kobo,
+    benefits: Array.isArray(plan.benefits)
+      ? plan.benefits.filter((benefit): benefit is string => typeof benefit === "string")
+      : [],
+  }));
+  const prices = (pricesResult.data ?? []).filter((price): price is PlanPrice =>
+    typeof price.plan_id === "string"
+      && (price.currency === "NGN" || price.currency === "USD")
+      && typeof price.amount_minor === "number"
+      && price.is_active === true,
+  );
+  const businesses = (businessesResult.data ?? []).flatMap((membership): SupplierBusiness[] => {
+    const business = Array.isArray(membership.businesses) ? membership.businesses[0] : membership.businesses;
+    if (!business || business.verification_status !== "approved") return [];
+    return [{ id: business.id, name: business.name, country: business.country }];
+  });
+  const checkoutConfig = getSubscriptionPaymentConfig();
+  const checkoutConfigured = Boolean(checkoutConfig) && !pricesResult.error;
+
   return (
-    <>
-      <section className="page-hero"><div className="page-container"><span className="eyebrow">Plans and pricing</span><h1>Start with what your business needs.</h1><p className="lead">Explore the plans available to your business. Paid subscriptions and online billing are not yet available.</p></div></section>
-      <section className="section-tight"><div className="page-container">
-        <SupabaseSetupNotice />
-        {plans.length ? <div className="card-grid">{plans.map((plan) => <article className="feature-card" key={plan.id}>
-          <span className="eyebrow">{plan.name}</span><h2 style={{ fontSize: 31, marginTop: 16 }}>{plan.monthly_price_kobo === 0 ? "Free" : formatMoney(plan.monthly_price_kobo)}<small className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{plan.monthly_price_kobo ? " / month" : ""}</small></h2>
-          <ul className="plan-benefits">{plan.benefits.map((benefit) => <li key={benefit}><BadgeCheck size={15} />{benefit}</li>)}</ul>
-          <Link className="button button-secondary" href="/become-supplier">Get started <ArrowRight size={15} /></Link>
-        </article>)}</div> : <div className="empty-state"><h3>Plans are unavailable right now</h3><p>Please check back later or contact support for help.</p><Link className="text-link" href="/contact">Contact support <ArrowRight size={15} /></Link></div>}
-      </div></section>
-    </>
+    <main className={styles.pricingPage}>
+      <section className={styles.hero}>
+        <div className="page-container">
+          <span className="eyebrow">StockSOS plans</span>
+          <h1>Make every listing work harder.</h1>
+          <p>Start free and choose more tools when your business needs them. Paid plans are prepaid for one month at a time, with no automatic renewal.</p>
+          <div className={styles.heroNotes}>
+            <span><ShieldCheck size={16} /> Payments verified before access begins</span>
+            <span><CreditCard size={16} /> Card or eligible local bank transfer</span>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.content}>
+        <div className="page-container">
+          <SupabaseSetupNotice />
+          {params.upgrade === "succeeded" ? <div className="notice success-notice" role="status"><strong>Payment verified.</strong><p>Your prepaid plan is recorded. Open your supplier workspace to use it.</p></div> : null}
+          {params.upgrade === "pending" ? <div className="notice" role="status"><strong>Payment is still being verified.</strong><p>Bank transfers can take a little longer. Please refresh this page or contact support if it does not update.</p></div> : null}
+          {params.upgrade === "failed" ? <div className="notice error-notice" role="alert"><strong>Payment was not completed.</strong><p>No plan upgrade was activated. You can try again when checkout is available.</p></div> : null}
+          {params.upgrade === "unverified" ? <div className="notice error-notice" role="alert"><strong>Payment could not be confirmed here.</strong><p>If you were charged, contact support with your Paystack receipt so we can investigate. Do not pay again yet.</p></div> : null}
+          {plansResult.error ? (
+            <div className="notice error-notice" role="alert"><strong>Plans could not be loaded.</strong><p>Refresh the page or contact support if this continues.</p></div>
+          ) : plans.length ? (
+            <PlanCheckout
+              plans={plans}
+              prices={prices}
+              countries={countryData.map(({ isoCode, name, currency }) => ({ code: isoCode, name, currency })).sort((a, b) => a.name.localeCompare(b.name))}
+              suggestedCountry={suggestedCountry}
+              referenceRates={referenceRates}
+              businesses={businesses}
+              isSignedIn={Boolean(user)}
+              isSupplier={isSupplier}
+              checkoutConfigured={checkoutConfigured}
+              usdCardEnabled={checkoutConfig?.usdEnabled ?? false}
+            />
+          ) : (
+            <div className="empty-state"><h2>Plans are unavailable right now</h2><p>Please check back later or contact support for help.</p><Link className="text-link" href="/contact">Contact support <ArrowRight size={15} /></Link></div>
+          )}
+          <div className={styles.helpLine}><CircleHelp size={17} /><span>Need help choosing a plan? <Link href="/contact">Talk to StockSOS support <ArrowRight size={14} /></Link></span></div>
+        </div>
+      </section>
+    </main>
   );
 }

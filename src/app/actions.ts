@@ -1030,6 +1030,27 @@ export async function adminUpdatePlanAction(formData: FormData) {
   redirect("/admin/settings?plan=updated");
 }
 
+export async function adminSetPlanNgnPriceAction(formData: FormData) {
+  await requireAdmin();
+  const planId = value(formData, "plan_id");
+  const amountMinor = moneyToMinorUnits(value(formData, "price"));
+  const isActive = value(formData, "is_active") === "yes";
+  if (!/^[a-z0-9-]{2,60}$/.test(planId) || planId === "free" || amountMinor === null) {
+    redirect("/admin/settings?error=plan");
+  }
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase!.rpc("admin_set_subscription_plan_price", {
+    p_plan_id: planId,
+    p_currency: "NGN",
+    p_amount_minor: amountMinor,
+    p_is_active: isActive,
+  });
+  if (error) redirect("/admin/settings?error=plan");
+  revalidatePath("/admin/settings");
+  revalidatePath("/pricing");
+  redirect("/admin/settings?plan=updated");
+}
+
 export async function adminUpdateMarketplaceFeeAction(formData: FormData) {
   await requireAdmin();
   const fee = value(formData, "fee_percent");

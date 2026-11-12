@@ -3,6 +3,7 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "crons": [
-    { "path": "/api/cron/reconcile-payments", "schedule": "0 0 * * *" }
+    { "path": "/api/cron/reconcile-payments", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/reconcile-subscriptions", "schedule": "15 0 * * *" }
   ]
 }
