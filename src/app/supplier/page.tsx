@@ -192,9 +192,17 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
                 </section> : null}
                 <section className="supplier-task-section" aria-labelledby="supplier-tasks-title">
                   <div className="supplier-task-heading"><div><span className="eyebrow">Your workspace</span><h2 id="supplier-tasks-title">What would you like to do?</h2></div><p className="muted small">Each area has its own page, so it’s easy to find the right tools.</p></div>
-                  <div className="supplier-task-grid">{workspaceLinks.map(({ href, label, description, icon: Icon, action }) => (
+                  <div className="supplier-task-grid supplier-task-grid-primary">{workspaceLinks.slice(0, 3).map(({ href, label, description, icon: Icon, action }) => (
                     <Link className="supplier-task-card" href={href} key={href}>
                       <span className="supplier-task-icon"><Icon size={19} /></span>
+                      <span className="supplier-task-copy"><strong>{label}</strong><small>{description}</small></span>
+                      <span className="supplier-task-action">{action}<ArrowRight size={14} /></span>
+                    </Link>
+                  ))}</div>
+                  <div className="supplier-tools-heading"><h3>Business tools</h3><p className="muted small">Track performance, manage your plan, and configure the sales assistant.</p></div>
+                  <div className="supplier-task-grid supplier-tools-grid">{workspaceLinks.slice(3).map(({ href, label, description, icon: Icon, action }) => (
+                    <Link className="supplier-task-card" href={href} key={href}>
+                      <span className="supplier-task-icon"><Icon size={18} /></span>
                       <span className="supplier-task-copy"><strong>{label}</strong><small>{description}</small></span>
                       <span className="supplier-task-action">{action}<ArrowRight size={14} /></span>
                     </Link>
