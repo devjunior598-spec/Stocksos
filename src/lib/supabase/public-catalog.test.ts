@@ -40,6 +40,25 @@ describe("public catalogue preview isolation", () => {
     });
   });
 
+  it("uses preview-scoped catalogue settings when Vercel system variables are not exposed", async () => {
+    accountClient.mockResolvedValue(null);
+    vi.stubEnv("VERCEL_ENV", "");
+    vi.stubEnv("PREVIEW_CATALOG_SUPABASE_URL", "https://catalog.example");
+    vi.stubEnv("PREVIEW_CATALOG_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    expect(hasPreviewCatalog()).toBe(true);
+    expect(await createPublicCatalogClient()).toEqual({ source: "anonymous-catalog" });
+  });
+
+  it("does not use a preview catalogue when only one account setting is missing", async () => {
+    accountClient.mockResolvedValue(null);
+    vi.stubEnv("VERCEL_ENV", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://accounts.example");
+    vi.stubEnv("PREVIEW_CATALOG_SUPABASE_URL", "https://catalog.example");
+    vi.stubEnv("PREVIEW_CATALOG_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    expect(hasPreviewCatalog()).toBe(false);
+    expect(await createPublicCatalogClient()).toBeNull();
+  });
+
   it("never uses the preview catalogue connection in production", async () => {
     accountClient.mockResolvedValue(null);
     vi.stubEnv("VERCEL_ENV", "production");

@@ -5,7 +5,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Preview catalogue reads use an anonymous client with no session or service key. */
 export function hasPreviewCatalog() {
-  return process.env.VERCEL_ENV === "preview" && Boolean(
+  return process.env.VERCEL_ENV !== "production"
+    && !process.env.NEXT_PUBLIC_SUPABASE_URL
+    && !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    && Boolean(
     process.env.PREVIEW_CATALOG_SUPABASE_URL && process.env.PREVIEW_CATALOG_SUPABASE_PUBLISHABLE_KEY,
   );
 }
