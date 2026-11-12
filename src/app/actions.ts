@@ -382,7 +382,7 @@ export async function createBusinessApplicationAction(formData: FormData) {
     };
     const logoType = logoTypes[logoFile.type];
     const logoHeader = new Uint8Array(await logoFile.slice(0, 12).arrayBuffer());
-    if (logoFile.size > 5 * 1024 * 1024 || !logoType || !logoType.signature(logoHeader)) {
+    if (logoFile.size > 4 * 1024 * 1024 || !logoType || !logoType.signature(logoHeader)) {
       redirect("/become-supplier?error=logo");
     }
     logoExtension = logoType.extension;

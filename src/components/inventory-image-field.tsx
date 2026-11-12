@@ -28,9 +28,12 @@ export function InventoryImageField({ id, currentPath = "", currentPaths = [], p
         return;
       }
       if (!photoRequiredForPublic) return;
+      const submitter = (event as SubmitEvent).submitter;
       const visibilityField = form?.elements.namedItem("visibility");
       const imageField = form?.elements.namedItem("image_path");
-      const isPublic = visibilityField instanceof HTMLSelectElement && visibilityField.value === "public";
+      const isPublic = submitter instanceof HTMLButtonElement && submitter.name === "visibility"
+        ? submitter.value === "public"
+        : visibilityField instanceof HTMLSelectElement && visibilityField.value === "public";
       const hasPhoto = imageField instanceof HTMLInputElement && Boolean(imageField.value);
       if (isPublic && !hasPhoto) {
         event.preventDefault();

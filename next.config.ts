@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Business profile images pass through a Server Action. Keep the request
+    // below Vercel's 4.5 MB function payload cap, including multipart overhead.
+    serverActions: { bodySizeLimit: 4_400_000 },
+  },
   async headers() {
     return [{
       source: "/:path*",

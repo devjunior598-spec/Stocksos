@@ -41,6 +41,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
   const approvedIds = businesses.filter((business) => business.verification_status === "approved").map((business) => business.id);
   const publicBusinessIds = new Set(businesses.filter((business) => business.verification_status === "approved" && business.visibility === "public").map((business) => business.id));
   const editableBusinessIds = new Set(memberships.filter((membership) => ["owner", "admin", "inventory"].includes(membership.role)).map((membership) => membership.business_id));
+  const canAddProduct = approvedIds.some((id) => editableBusinessIds.has(id));
   const [productsResult, matchesResult, ordersResult, notificationResult] = await Promise.all([
     approvedIds.length
       ? supabase!.from("products")
@@ -51,15 +52,19 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
       ? supabase!.from("supplier_matches").select("id", { count: "exact", head: true }).in("business_id", approvedIds).eq("status", "matched")
       : Promise.resolve({ count: 0 }),
     businessIds.length
-      ? supabase!.from("orders").select("id,status").in("business_id", businessIds).order("created_at", { ascending: false }).limit(100)
+      ? supabase!.from("orders").select("id,status", { count: "exact" }).in("business_id", businessIds).order("created_at", { ascending: false }).limit(100)
       : Promise.resolve({ data: [] }),
     supabase!.from("notifications").select("id,title,body,read_at,created_at")
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
   ]);
   const products = productsResult.data ?? [];
   const inventoryUnavailable = "error" in productsResult && Boolean(productsResult.error);
+  const matchesUnavailable = "error" in matchesResult && Boolean(matchesResult.error);
+  const ordersUnavailable = "error" in ordersResult && Boolean(ordersResult.error);
+  const notificationsUnavailable = Boolean(notificationResult.error);
   const inventoryTruncated = "count" in productsResult && typeof productsResult.count === "number" && productsResult.count > products.length;
   const orders = ordersResult.data ?? [];
+  const ordersTruncated = "count" in ordersResult && typeof ordersResult.count === "number" && ordersResult.count > orders.length;
   const notifications = notificationResult.data ?? [];
   const stockCount = (product: (typeof products)[number]) => {
     const inventory = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory;
@@ -105,7 +110,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
       href: "/supplier/orders",
       action: "Manage orders",
     }] : []),
-    ...(discoverableProducts === 0 ? [{
+    ...(!inventoryUnavailable && canAddProduct && discoverableProducts === 0 ? [{
       key: "listing",
       tone: "ready",
       icon: PackagePlus,
@@ -125,10 +130,8 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
             <h1>Your business, at a glance.</h1>
             <p className="muted">Choose a task to manage products, respond to buyers, or fulfil orders.</p>
           </div>
-          <Link className="button button-primary" href={businesses.length ? "/supplier/marketplace/new" : "/become-supplier"}>
-            {businesses.length ? <PackagePlus size={16} /> : <Building2 size={16} />}
-            {businesses.length ? "Add a product" : "Add your business"}
-          </Link>
+          {canAddProduct ? <Link className="button button-primary" href="/supplier/marketplace/new"><PackagePlus size={16} /> Add a product</Link>
+            : !businesses.length && !membershipResult.error ? <Link className="button button-primary" href="/become-supplier"><Building2 size={16} /> Add your business</Link> : null}
         </div>
         <SupabaseSetupNotice />
         {params.application === "created" ? <div className="notice success-notice" role="status"><div><strong>Business application submitted successfully.</strong><p>Your supplier workspace is ready. Add products to make your stock discoverable.</p></div></div> : null}
@@ -159,12 +162,14 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
             {!approvedIds.length ? <div className="notice supplier-approval-note"><BadgeCheck size={18} /><div><strong>Your business is being reviewed.</strong><p>Product publishing and buyer-request matching will be available when approval is complete. You can check back here for updates.</p></div></div> : (
               <>
                 {inventoryUnavailable ? <div className="notice error-notice" role="alert"><div><strong>Inventory could not be loaded.</strong><p>Refresh before relying on product counts or stock alerts.</p></div></div> : null}
+                {matchesUnavailable || ordersUnavailable || notificationsUnavailable ? <div className="notice error-notice" role="alert"><div><strong>Some workspace data could not be loaded.</strong><p>{[matchesUnavailable && "buyer requests", ordersUnavailable && "orders", notificationsUnavailable && "notifications"].filter(Boolean).join(", ")} may be incomplete. Refresh before relying on these totals.</p></div></div> : null}
                 {inventoryTruncated ? <p className="muted small">Stock alerts cover your latest 1,000 listings.</p> : null}
+                {ordersTruncated ? <p className="muted small">Order totals below cover your latest 100 orders. Open Orders for full history.</p> : null}
                 <div className="dashboard-grid supplier-stats">
                   <article className="stat-card"><span>Discoverable products</span><strong>{discoverableDisplay}</strong><span className="small">Public listings with stock available</span></article>
-                  <article className="stat-card"><span>Matched requests</span><strong>{openMatches}</strong><span className="small">Buyer needs ready for a quotation</span></article>
-                  <article className="stat-card"><span>Orders in progress</span><strong>{ordersInProgress}</strong><span className="small">Orders to prepare or deliver</span></article>
-                  <article className="stat-card"><span>Completed orders</span><strong>{completedOrders}</strong><span className="small">From your recent order history</span></article>
+                  <article className="stat-card"><span>Matched requests</span><strong>{matchesUnavailable ? "—" : openMatches}</strong><span className="small">Buyer needs ready for a quotation</span></article>
+                  <article className="stat-card"><span>Orders in progress</span><strong>{ordersUnavailable ? "—" : ordersTruncated ? `${ordersInProgress}+` : ordersInProgress}</strong><span className="small">From your recent order history</span></article>
+                  <article className="stat-card"><span>Completed orders</span><strong>{ordersUnavailable ? "—" : ordersTruncated ? `${completedOrders}+` : completedOrders}</strong><span className="small">From your recent order history</span></article>
                 </div>
                 <section className="supplier-today panel" aria-labelledby="supplier-today-title">
                   <div className="supplier-today-head">
@@ -178,7 +183,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
                       <span className="supplier-today-copy"><strong>{task.label}</strong><small>{task.description}</small></span>
                       <span className="supplier-today-action">{task.action}<ArrowRight size={14} /></span>
                     </Link>;
-                  })}</div> : <div className="supplier-today-empty"><span className="supplier-today-icon"><BadgeCheck size={18} /></span><div><strong>Your workspace is up to date.</strong><p>Keep your catalog fresh or add another product to give buyers more ways to find you.</p></div><Link className="button button-secondary button-small" href="/supplier/marketplace/new"><PackagePlus size={14} /> Add a product</Link></div>}
+                  })}</div> : <div className="supplier-today-empty"><span className="supplier-today-icon"><BadgeCheck size={18} /></span><div><strong>{inventoryUnavailable || matchesUnavailable || ordersUnavailable ? "Check back after refreshing your workspace." : "Your workspace is up to date."}</strong><p>{inventoryUnavailable || matchesUnavailable || ordersUnavailable ? "Some tasks may be missing while data is unavailable." : "Keep your catalog fresh or add another product to give buyers more ways to find you."}</p></div>{canAddProduct ? <Link className="button button-secondary button-small" href="/supplier/marketplace/new"><PackagePlus size={14} /> Add a product</Link> : null}</div>}
                 </section>
                 {stockTasks.length ? <section className="panel dashboard-section supplier-stock-attention" aria-labelledby="supplier-stock-attention-title">
                   <div className="dashboard-section-head"><div><h2 id="supplier-stock-attention-title">Products needing attention</h2><p className="muted small">Update stock or listing details to help buyers find accurate products.</p></div><CircleAlert size={18} /></div>
@@ -200,7 +205,7 @@ export default async function SupplierDashboardPage({ searchParams }: { searchPa
             <div className="dashboard-columns supplier-home-columns">
               <section className="panel dashboard-section">
                 <div className="dashboard-section-head"><div><h2>Recent notifications</h2><p className="muted small">Important updates about your business and orders.</p></div><Bell size={17} color="#246bfe" /></div>
-                {notifications.length ? <div className="notification-list">{notifications.map((notification) => <article className={notification.read_at ? "notification-row" : "notification-row notification-unread"} key={notification.id}>
+                {notificationsUnavailable ? <div className="empty-notice" role="alert"><CircleAlert size={17} /><span>Notifications could not be loaded. Refresh to try again.</span></div> : notifications.length ? <div className="notification-list">{notifications.map((notification) => <article className={notification.read_at ? "notification-row" : "notification-row notification-unread"} key={notification.id}>
                   <div className="notification-copy"><strong>{notification.title}</strong><p>{notification.body}</p><small>{new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(notification.created_at))}</small></div>
                   {!notification.read_at ? <form action={markNotificationReadAction}><input type="hidden" name="notification_id" value={notification.id} /><input type="hidden" name="return_to" value="/supplier" /><button className="text-link small" type="submit">Mark read</button></form> : null}
                 </article>)}</div> : <div className="empty-notice"><Bell size={17} /><span>No notifications yet. Updates will appear here.</span></div>}

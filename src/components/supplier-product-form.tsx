@@ -23,7 +23,12 @@ export function SupplierProductForm({ children }: { children: ReactNode }) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
-    const formData = new FormData(event.currentTarget);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const formData = submitter instanceof HTMLButtonElement
+      ? new FormData(event.currentTarget, submitter)
+      : new FormData(event.currentTarget);
+    // Keep a defined intent for keyboard submissions without a submitter.
+    if (!formData.has("visibility")) formData.set("visibility", "public");
     setState({ error: "" });
     startTransition(async () => {
       try {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, ShieldCheck, X } from "lucide-react";
 
-const MAX_LOGO_SIZE = 5 * 1024 * 1024;
+const MAX_LOGO_SIZE = 4 * 1024 * 1024;
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export function BusinessLogoUpload() {
@@ -38,7 +38,7 @@ export function BusinessLogoUpload() {
       return;
     }
     if (selected.size > MAX_LOGO_SIZE) {
-      setError("The business image must be 5 MB or smaller.");
+      setError("The business image must be 4 MB or smaller.");
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       clearPreview();
@@ -64,7 +64,7 @@ export function BusinessLogoUpload() {
           <label className="button button-secondary button-small" htmlFor="business_logo">{file ? "Change image" : "Choose image"}</label>
           {file ? <button className="button button-quiet button-small" type="button" onClick={() => { setFile(null); setError(""); clearPreview(); if (inputRef.current) inputRef.current.value = ""; }}> <X size={13} /> Remove</button> : null}
         </div>
-        <span className="form-hint">JPG, PNG or WebP · up to 5 MB. The image is shown publicly only with your approved public business profile. Upload only an image you have permission to use.</span>
+        <span className="form-hint">JPG, PNG or WebP · up to 4 MB. The image is shown publicly only with your approved public business profile. Upload only an image you have permission to use.</span>
       </div>
     </div>
     <input ref={inputRef} className="business-logo-input" id="business_logo" name="business_logo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="business-logo-status" onChange={(event) => chooseFile(event.target.files?.[0] ?? null)} />
