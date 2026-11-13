@@ -27,6 +27,15 @@ export function InventoryImageField({ id, currentPath = "", currentPaths = [], p
         setError("Wait for the product media upload to finish before publishing.");
         return;
       }
+      const businessField = form?.elements.namedItem("business_id");
+      const businessId = businessField instanceof HTMLInputElement || businessField instanceof HTMLSelectElement ? businessField.value : "";
+      if (businessField instanceof HTMLSelectElement && paths.some((path) => !path.startsWith(`${businessId}/`))) {
+        event.preventDefault();
+        event.stopPropagation();
+        setError("These files were uploaded for another business. Remove them and upload them again for the selected business.");
+        fileRef.current?.focus();
+        return;
+      }
       if (!photoRequiredForPublic) return;
       const submitter = (event as SubmitEvent).submitter;
       const visibilityField = form?.elements.namedItem("visibility");
@@ -78,16 +87,21 @@ export function InventoryImageField({ id, currentPath = "", currentPaths = [], p
 
     setUploading(true); setError("");
     const uploaded: string[] = [];
-    for (const file of files) {
-      const extension = acceptedTypes.get(file.type)!;
-      const objectPath = `${businessId}/${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supabase.storage.from("marketplace-images").upload(objectPath, file, { contentType: file.type, cacheControl: "3600", upsert: false });
-      if (uploadError) { setError("Some media could not be uploaded. Check your connection and add the missing files again."); break; }
-      uploaded.push(objectPath);
+    try {
+      for (const file of files) {
+        const extension = acceptedTypes.get(file.type)!;
+        const objectPath = `${businessId}/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabase.storage.from("marketplace-images").upload(objectPath, file, { contentType: file.type, cacheControl: "3600", upsert: false });
+        if (uploadError) throw uploadError;
+        uploaded.push(objectPath);
+      }
+    } catch {
+      setError("Some media could not be uploaded. Check your connection and add the missing files again.");
+    } finally {
+      setPaths((current) => [...current, ...uploaded]);
+      setUploading(false);
+      if (input) input.value = "";
     }
-    setPaths((current) => [...current, ...uploaded]);
-    setUploading(false);
-    if (input) input.value = "";
   }
 
   function removePath(path: string) {
